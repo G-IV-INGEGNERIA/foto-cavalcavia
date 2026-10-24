@@ -1,0 +1,2204 @@
+<!doctype html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#17202a"><link rel="manifest" href="manifest.webmanifest"><link rel="icon" href="icona-192.png"><link rel="apple-touch-icon" href="icona-192.png"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style></head><body><title>Foto Cavalcavia</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: una colonna da usare con una mano in campo. Testata fissa in alto, elenco difetti
+   che scorre, barra di scatto fissa in basso a portata di pollice. Contrasto alto per il sole. */
+:root {
+  --bg: #eef0ec;
+  --surface: #ffffff;
+  --surface-2: #f6f7f4;
+  --ink: #17202a;
+  --muted: #5a6571;
+  --line: #d6dad4;
+  --sel: #1f5fbf;
+  --sel-weak: #e2ebf9;
+  --hivis: #f2b100;
+  --hivis-ink: #1d1600;
+  --ok: #1d7a3b;
+  --ok-weak: #dff1e5;
+  --warn: #875400;
+  --warn-weak: #fff0cc;
+  --bad: #b3261e;
+  --bad-weak: #fbe6e4;
+  --head: #17202a;
+  --head-ink: #f2f4f1;
+  --f-disp: "IBM Plex Sans Condensed", "Roboto Condensed", "Arial Narrow", sans-serif;
+  --f-body: "IBM Plex Sans", Roboto, "Segoe UI", system-ui, sans-serif;
+  --f-mono: "IBM Plex Mono", "Roboto Mono", ui-monospace, monospace;
+  --r: 10px;
+  --barra-h: 132px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10151b; --surface: #19212a; --surface-2: #141b22; --ink: #e9eef2; --muted: #9ba7b3; --line: #2b3540;
+    --sel: #79a8ff; --sel-weak: #1b2b44; --hivis: #f2b100; --hivis-ink: #1d1600;
+    --ok: #63c787; --ok-weak: #16301f; --warn: #f2bd60; --warn-weak: #382a10; --bad: #ff8c80; --bad-weak: #3b1b18;
+    --head: #0a0e12; --head-ink: #e9eef2; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10151b; --surface: #19212a; --surface-2: #141b22; --ink: #e9eef2; --muted: #9ba7b3; --line: #2b3540;
+  --sel: #79a8ff; --sel-weak: #1b2b44; --hivis: #f2b100; --hivis-ink: #1d1600;
+  --ok: #63c787; --ok-weak: #16301f; --warn: #f2bd60; --warn-weak: #382a10; --bad: #ff8c80; --bad-weak: #3b1b18;
+  --head: #0a0e12; --head-ink: #e9eef2; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+img.rotta { visibility: hidden; }
+.form-drive { display: flex; gap: 8px; margin-top: 8px; }
+.form-drive input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); }   /* anteprima che il telefono non sa mostrare (es. HEIC su Android): riquadro vuoto, non icona rotta */
+/* testi lunghi senza spazi (nomi, descrizioni, note) vanno a capo invece di allargare la pagina */
+.app, .nome, .meta, .ds, .v, .nota, .dest-lista span, .pannello b, .pannello .sp, .toast .t, .prec-riga .t, .etich,
+.vuoto-home, .avviso, .passi li span, .parte .t, .opz span, p.sp, .conferma span, .riga-prog span { overflow-wrap: anywhere; }
+html, body { min-height: 100%; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.4 var(--f-body); -webkit-tap-highlight-color: transparent; overflow-wrap: break-word; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--head); }
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--sel); outline-offset: 2px; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* ---------- testata ---------- */
+header.testa { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: var(--head); color: var(--head-ink); }
+.testa-in { display: flex; align-items: center; gap: 10px; padding-block: 10px; min-height: 58px; }
+.indietro { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: inherit; font-size: 22px; line-height: 1; display: grid; place-items: center; }
+.testa-tit { flex: 1; min-width: 0; }
+.testa-tit .app { font: 700 18px/1.1 var(--f-disp); letter-spacing: .01em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.testa-tit .sub { font: 500 13px/1.25 var(--f-disp); color: #b8c2cc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pill { flex: none; display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 5px 10px; font: 600 12px/1 var(--f-disp); letter-spacing: .02em; border: 0; background: rgba(255,255,255,.1); color: inherit; }
+.pill .pt { width: 8px; height: 8px; border-radius: 50%; background: #9aa5b0; }
+.pill.ok .pt { background: #5fd38a; }
+.pill.attesa .pt { background: var(--hivis); }
+.pill.errore .pt { background: #ff6b5e; }
+.pill.lavora .pt { animation: pulsa 1s infinite alternate; }
+@keyframes pulsa { from { opacity: 1; } to { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .pill.lavora .pt { animation: none; } }
+
+main { padding-block: 14px calc(var(--barra-h) + env(safe-area-inset-bottom, 0px) + 20px); }
+main.home { padding-bottom: 40px; }
+.avviso { border-radius: var(--r); padding: 10px 12px; font-size: 14px; margin-bottom: 12px; }
+.avviso.warn { background: var(--warn-weak); color: var(--warn); }
+.avviso.bad { background: var(--bad-weak); color: var(--bad); }
+.avviso.info { background: var(--sel-weak); color: var(--ink); }
+.avviso b { font-weight: 600; }
+
+/* ---------- home ---------- */
+h2.sez { font: 700 13px/1 var(--f-disp); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 22px 0 10px; }
+h2.sez:first-child { margin-top: 4px; }
+.sez-riga { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; margin: 22px 0 10px; }
+.sez-riga h2.sez { margin: 0; }
+.sez-riga:first-child { margin-top: 4px; }
+.link { border: 0; background: none; padding: 6px 0 6px 10px; color: var(--sel); font: 600 14px/1 var(--f-disp); }
+.gest { display: grid; gap: 10px; }
+.gest-isp { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 8px; }
+.gest-isp .nome { font: 700 17px/1.15 var(--f-disp); }
+.gest-isp .meta { font-size: 13px; color: var(--muted); display: grid; gap: 2px; }
+.gest-isp .meta b { color: var(--ink); font-weight: 600; }
+.gest-isp .meta .att { color: var(--warn); font-weight: 600; }
+.gest-isp .bt { display: flex; gap: 8px; flex-wrap: wrap; }
+.lista-isp { display: grid; gap: 10px; }
+.card-isp { width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 8px; }
+.card-isp .nome { font: 700 19px/1.15 var(--f-disp); }
+.card-isp .meta { font-size: 13px; color: var(--muted); }
+.barra-prog { height: 8px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.barra-prog > i { display: block; height: 100%; background: var(--ok); border-radius: 4px; }
+.riga-prog { display: flex; justify-content: space-between; gap: 10px; font: 500 13px/1.2 var(--f-disp); color: var(--muted); }
+.riga-prog b { color: var(--ink); font-family: var(--f-mono); font-weight: 600; }
+.vuoto-home { background: var(--surface); border: 1.5px dashed var(--line); border-radius: var(--r); padding: 18px; color: var(--muted); }
+.vuoto-home b { color: var(--ink); }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 18px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); font-weight: 600; text-decoration: none; }
+.btn.prim { background: var(--sel); border-color: var(--sel); color: #fff; }
+.btn.blocco { width: 100%; }
+.btn.picc { min-height: 38px; padding: 0 12px; font-size: 14px; }
+.btn.peric { color: var(--bad); }
+.btn:disabled { opacity: .45; cursor: default; }
+.passi { counter-reset: p; list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.passi li { counter-increment: p; display: grid; grid-template-columns: 28px 1fr; gap: 10px; align-items: start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; font-size: 14px; }
+.passi li::before { content: counter(p); width: 28px; height: 28px; border-radius: 50%; background: var(--head); color: var(--head-ink); display: grid; place-items: center; font: 700 14px/1 var(--f-disp); }
+.passi b { font-weight: 600; }
+.piede { margin-top: 18px; font-size: 12.5px; color: var(--muted); display: grid; gap: 4px; }
+
+/* ---------- ispezione ---------- */
+.riepilogo { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 8px; margin-bottom: 12px; }
+.riepilogo .r1 { display: flex; align-items: center; gap: 10px; }
+.riepilogo .r1 .riga-prog { flex: 1; }
+.strumenti { display: flex; gap: 8px; align-items: center; margin-bottom: 10px; }
+.strumenti input[type=search] { flex: 1; min-width: 0; height: 46px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); padding: 0 12px; font-size: 16px; }
+.chip { flex: none; height: 46px; padding: 0 12px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); font: 600 14px/1 var(--f-disp); }
+.chip[aria-pressed="true"] { background: var(--sel-weak); border-color: var(--sel); color: var(--sel); }
+
+.gruppo { margin-bottom: 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+.g-testa { width: 100%; display: flex; align-items: center; gap: 8px; padding: 12px; border: 0; background: var(--surface-2); text-align: left; border-bottom: 1px solid var(--line); }
+.g-testa .gn { flex: 1; font: 700 16px/1.1 var(--f-disp); letter-spacing: .01em; }
+.g-testa .gc { font: 500 13px/1 var(--f-mono); color: var(--muted); }
+.g-testa .fr { color: var(--muted); width: 16px; text-align: center; }
+.gruppo.chiuso .g-testa { border-bottom: 0; }
+.comp { display: flex; align-items: center; gap: 8px; padding: 10px 12px 4px; }
+.comp .cn { flex: 1; font: 600 13px/1.2 var(--f-disp); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.comp .tutti { border: 0; background: none; color: var(--sel); font: 600 13px/1 var(--f-disp); padding: 6px 0 6px 8px; }
+.dif { width: 100%; display: grid; grid-template-columns: 28px 1fr auto auto; align-items: center; gap: 4px 10px; padding: 10px 12px; min-height: 58px; border: 0; border-top: 1px solid var(--line); background: transparent; text-align: left; }
+.comp + .dif { border-top: 0; }
+.dif .ck { width: 26px; height: 26px; border-radius: 7px; border: 2px solid var(--muted); display: grid; place-items: center; color: transparent; font: 700 16px/1 var(--f-body); }
+.dif[aria-pressed="true"] { background: var(--sel-weak); }
+.dif[aria-pressed="true"] .ck { background: var(--sel); border-color: var(--sel); color: #fff; }
+.dif .tx { min-width: 0; }
+.dif .id { font: 500 12px/1 var(--f-mono); color: var(--muted); display: block; margin-bottom: 3px; }
+.dif .ds { font-weight: 500; font-size: 15px; line-height: 1.25; display: block; }
+.dif .nt { display: block; font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.dif .dx { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.g { font: 700 11px/1 var(--f-mono); border-radius: 4px; padding: 3px 5px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); }
+.g.g3 { background: var(--warn-weak); color: var(--warn); border-color: transparent; }
+.g.g4, .g.g5 { background: var(--bad-weak); color: var(--bad); border-color: transparent; }
+.nf { font: 600 12px/1 var(--f-mono); border-radius: 999px; padding: 5px 8px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--line); white-space: nowrap; }
+.nf.si { background: var(--ok-weak); color: var(--ok); border-color: transparent; }
+.pv { display: block; width: 56px; height: 42px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
+.pv img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pv.mia { border: 2px solid var(--ok); }
+.prec-riga { display: flex; align-items: center; gap: 10px; font-size: 13.5px; color: var(--muted); }
+.prec-riga .t { flex: 1; min-width: 0; }
+.prec-riga b { color: var(--ink); font-weight: 600; }
+.prec-foto { display: block; width: 100%; padding: 0; border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; background: #000; margin-bottom: 14px; position: relative; }
+.prec-foto img { display: block; width: 100%; max-height: 46vh; object-fit: contain; }
+.prec-foto .st { position: absolute; left: 8px; top: 8px; font: 600 12px/1 var(--f-disp); padding: 5px 8px; border-radius: 999px; background: rgba(0,0,0,.65); color: #fff; }
+.vista .etich { font: 600 12px/1 var(--f-disp); letter-spacing: .06em; text-transform: uppercase; color: var(--warn); }
+.nuovo-form { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--line); }
+.nuovo-form input { flex: 1; min-width: 0; height: 44px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface-2); padding: 0 10px; font-size: 16px; }
+.niente { padding: 24px 12px; text-align: center; color: var(--muted); }
+
+/* ---------- barra di scatto ---------- */
+.barra { position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -6px 18px rgba(0,0,0,.08); padding-top: 10px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+.barra .info { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
+.barra .info .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.barra .info b { color: var(--ink); }
+.barra .info .x { flex: none; border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
+.barra .az { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+.scatta { min-height: 58px; border-radius: 12px; border: 0; background: var(--hivis); color: var(--hivis-ink); font: 700 19px/1 var(--f-disp); letter-spacing: .02em; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
+.scatta:disabled, .galleria:disabled { opacity: .4; }
+.galleria { min-height: 58px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface-2); font: 600 15px/1.1 var(--f-disp); }
+.ico-cam { width: 26px; height: 22px; }
+input.nascosto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+
+/* ---------- avvisi temporanei ---------- */
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--barra-h) + env(safe-area-inset-bottom, 0px) + 12px); z-index: 40; background: var(--head); color: var(--head-ink); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.toast img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex: none; background: #333; }
+.toast .t { flex: 1; min-width: 0; font-size: 14px; }
+.toast .t b { display: block; font-weight: 600; }
+.toast button { flex: none; border: 1px solid rgba(255,255,255,.3); background: transparent; color: inherit; border-radius: 8px; padding: 8px 10px; font-weight: 600; white-space: nowrap; }
+main.home ~ .toast { bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+
+/* ---------- fogli (dettaglio, foto, esporta) ---------- */
+.foglio { position: fixed; inset: 0; z-index: 50; background: var(--bg); display: flex; flex-direction: column; overflow: hidden; padding-top: env(safe-area-inset-top, 0px); }
+.foglio .f-testa { background: var(--head); color: var(--head-ink); }
+.foglio .f-corpo { flex: 1; overflow-y: auto; padding-block: 14px calc(24px + env(safe-area-inset-bottom, 0px)); }
+.scheda { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: grid; gap: 6px; margin-bottom: 14px; }
+.scheda .k { font: 500 12px/1 var(--f-mono); color: var(--muted); }
+.scheda .v { font-size: 15px; }
+.scheda .nota { font-size: 14px; color: var(--muted); white-space: pre-wrap; }
+.griglia { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.miniatura { position: relative; aspect-ratio: 1; max-width: 100%; border-radius: 8px; overflow: hidden; border: 0; padding: 0; background: var(--surface-2); }
+.miniatura img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.miniatura .st { position: absolute; left: 5px; bottom: 5px; font: 600 10.5px/1 var(--f-disp); padding: 3px 6px; border-radius: 999px; background: rgba(0,0,0,.6); color: #fff; }
+.vista { position: fixed; inset: 0; z-index: 60; background: #000; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top, 0px); }
+.vista .img { flex: 1; min-height: 0; display: grid; place-items: center; }
+.vista .img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.vista .pannello { background: var(--surface); color: var(--ink); border-radius: 14px 14px 0 0; padding-top: 14px; padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); display: grid; gap: 10px; max-height: 50%; overflow-y: auto; }
+.dest-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.dest-lista li { display: flex; align-items: center; gap: 8px; background: var(--surface-2); border-radius: 8px; padding: 8px 10px; font-size: 14px; }
+.dest-lista li span { flex: 1; min-width: 0; }
+.conferma { background: var(--bad-weak); color: var(--bad); border-radius: var(--r); padding: 12px; display: grid; gap: 10px; }
+.conferma .bt { display: flex; gap: 8px; flex-wrap: wrap; }
+.parti { display: grid; gap: 8px; }
+.parte { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 12px; }
+.parte .t { flex: 1; min-width: 0; font-size: 14px; }
+.parte .t b { display: block; font: 600 15px/1.2 var(--f-disp); }
+.parte.fatta { border-color: var(--ok); }
+.opz { display: grid; gap: 8px; margin-bottom: 12px; }
+.opz label { display: flex; gap: 10px; align-items: flex-start; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; font-size: 14px; }
+.opz input { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--sel); }
+.progresso { height: 10px; border-radius: 5px; background: var(--surface-2); border: 1px solid var(--line); overflow: hidden; }
+.progresso > i { display: block; height: 100%; width: 0; background: var(--sel); transition: width .2s; }
+p.sp { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
+@media (min-width: 760px) {
+  .contenuto { max-width: 720px; margin: 0 auto; }
+  .barra .az, .barra .info { max-width: 720px; margin-left: auto; margin-right: auto; }
+  .toast { left: 50%; right: auto; width: min(720px, calc(100% - 32px)); transform: translateX(-50%); }
+}
+</style>
+
+<header class="testa"><div class="testa-in gutter contenuto" id="testa"></div></header>
+<main id="main" class="gutter"><div class="contenuto" id="vista"></div></main>
+<div class="barra gutter" id="barra" hidden></div>
+<input type="file" id="inCamera" class="nascosto" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+<input type="file" id="inGalleria" class="nascosto" accept="image/*" multiple tabindex="-1" aria-hidden="true">
+<input type="file" id="inElenco" class="nascosto" accept=".xlsx,.csv,.pdf,text/csv,application/pdf,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" multiple tabindex="-1" aria-hidden="true">
+<div id="toast" class="toast" hidden></div>
+<div id="foglio" class="foglio" hidden></div>
+<div id="vistaFoto" class="vista" hidden></div>
+<div id="vistaPrec" class="vista" hidden></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   Foto ARGO - scatta le foto dei difetti e le assegna gia' in campo.
+   Dati: IndexedDB del telefono (subito) + spazio online dell'app (db + assets)
+   quando c'e' campo. Esporta pacchetti ZIP per il PC (importa_telefono.py).
+   ===================================================================== */
+
+const VERSIONE = "16 (24/10)";
+const LIMITE_PARTE = 180 * 1024 * 1024;     // sotto i 200 MB dell'app Claude per Android
+const LIMITE_ASSET = 20 * 1024 * 1024;
+const TIPI_ONLINE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+const CHIAVE_GENERALI = "_FOTO_GENERALI";
+const PREF_NUOVO = "_NUOVI_DIFETTI/";
+
+const S = {
+  isp: new Map(),        // id -> ispezione
+  foto: new Map(),       // id -> foto
+  aperta: null,          // id ispezione aperta
+  sel: new Set(),        // chiavi destinazione selezionate
+  cerca: "",
+  soloSenza: false,
+  chiusi: new Set(),
+  locale: true,          // IndexedDB disponibile
+  cap: { db: null, assets: null, downloads: null },
+  cloud: "attesa",       // attesa | ok | assente
+  sync: { inCorso: false, errore: "", prossimo: 0 },
+  miniUrl: new Map(),
+  prec: new Map(),       // id ispezione -> { info, foto: Map(id difetto -> foto dell'ultima ispezione) }
+  precUrl: new Map(),
+  vistaPrec: null,       // chiave del difetto di cui si vede la foto precedente
+  gest: null,            // foglio "Ispezioni caricate": { conferma: id ispezione da eliminare }
+  autonoma: false,       // aperta fuori da claude.ai: tutto resta sul telefono (o va sul Drive collegato)
+  drive: null,           // { url, cartella, proprietario }: Drive collegato (solo versione autonoma)
+  base: "",              // dove stanno i dati online: "" per il proprietario, "data/users/<id>/archivio/" per chi è invitato
+  senzaSpazio: false,    // invitato senza uno spazio online personale: tutto resta sul telefono
+  ruolo: "",             // proprietario | invitato (per la pagina «Stato dell'app»)
+  statoAperto: false,    // pagina «Stato dell'app» aperta
+};
+const $ = (s, el = document) => el.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+/* ---------------- utilita' ---------------- */
+function nomeCartella(testo, max = 60) {
+  let s = String(testo || "").replace(/[\/\\]/g, "-").replace(/[:*?"<>|]/g, "-").replace(/[\x00-\x1f]/g, " ");
+  s = s.replace(/\s+/g, " ").trim();
+  s = s.slice(0, max).replace(/[ .]+$/, "");
+  return s || "SENZA_NOME";
+}
+function naturale(a, b) { return String(a).localeCompare(String(b), "it", { numeric: true, sensitivity: "base" }); }
+function nuovoId() { return "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+function pad(n, l = 2) { return String(n).padStart(l, "0"); }
+function timbro(d) { return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`; }
+function mb(b) { return b >= 1048576 ? (b / 1048576).toFixed(b >= 10485760 ? 0 : 1) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB"; }
+function oraBreve(iso) { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? "" : `${pad(d.getDate())}/${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function vibra() { try { navigator.vibrate && navigator.vibrate(25); } catch (e) {} }
+
+/* ---------------- archivio sul telefono (IndexedDB) ---------------- */
+let _idb = null;
+function apriLocale() {
+  if (!_idb) _idb = new Promise((ok, ko) => {
+    let r;
+    try { r = indexedDB.open("argo-foto", 2); } catch (e) { ko(e); return; }
+    r.onupgradeneeded = () => {
+      const d = r.result;
+      if (!d.objectStoreNames.contains("foto")) d.createObjectStore("foto", { keyPath: "id" });
+      if (!d.objectStoreNames.contains("ispezioni")) d.createObjectStore("ispezioni", { keyPath: "id" });
+      if (!d.objectStoreNames.contains("prec")) d.createObjectStore("prec", { keyPath: "id" });
+    };
+    r.onsuccess = () => ok(r.result);
+    r.onerror = () => ko(r.error);
+  });
+  return _idb;
+}
+function _fine(t) { return new Promise((ok, ko) => { t.oncomplete = () => ok(); t.onerror = () => ko(t.error); t.onabort = () => ko(t.error); }); }
+async function lPut(store, val) {
+  if (!S.locale) return;
+  try { const d = await apriLocale(); const t = d.transaction(store, "readwrite"); t.objectStore(store).put(val); await _fine(t); }
+  catch (e) { segnalaLocale(e); }
+}
+async function lDel(store, key) {
+  if (!S.locale) return;
+  try { const d = await apriLocale(); const t = d.transaction(store, "readwrite"); t.objectStore(store).delete(key); await _fine(t); }
+  catch (e) { segnalaLocale(e); }
+}
+async function lScrivi(store, metti, togli) {
+  if (!S.locale) return;
+  try {
+    const d = await apriLocale(); const t = d.transaction(store, "readwrite"), os = t.objectStore(store);
+    for (const k of togli || []) os.delete(k);
+    for (const v of metti || []) os.put(v);
+    await _fine(t);
+  } catch (e) { segnalaLocale(e); }
+}
+async function lTutti(store) {
+  const d = await apriLocale();
+  return new Promise((ok, ko) => { const r = d.transaction(store).objectStore(store).getAll(); r.onsuccess = () => ok(r.result || []); r.onerror = () => ko(r.error); });
+}
+function segnalaLocale(e) { console.warn("archivio locale", e); if (S.locale) { S.locale = false; disegna(); } }
+
+function fotoPerLocale(f) {
+  const { id, isp, nome, scattata, dest, blob, thumb, size, tipo, asset, esportata, sync, creata, galleria } = f;
+  return { id, isp, nome, scattata, dest, blob, thumb, size, tipo, asset: asset || null, esportata: !!esportata, sync, creata, galleria: !!galleria,
+    convertita: !!f.convertita, sizeOnline: f.sizeOnline || 0, soloTelefono: !!f.soloTelefono, motivo: f.motivo || "", formato: f.formato || "",
+    fallimenti: f.fallimenti || 0, inConversione: !!f.inConversione,
+    drive: f.drive || null, driveFile: f.driveFile || "", driveNome: f.driveNome || "", driveCartella: f.driveCartella || "", driveUrl: f.driveUrl || "", driveDest: f.driveDest || "" };
+}
+// scrive la foto sul telefono solo se c'e' ancora (non riportare in vita una foto appena eliminata)
+async function salvaLocale(f) { if (S.foto.get(f.id) === f && f.locale) await lPut("foto", fotoPerLocale(f)); }
+function fotoPerCloud(f) {
+  // se online c'e' una copia JPEG (originale HEIC o simile), nome e tipo online sono quelli della copia
+  const conv = !!f.convertita;
+  return { isp: f.isp, nome: conv ? String(f.nome || "foto").replace(/\.[^.]*$/, "") + ".jpg" : f.nome, scattata: f.scattata, dest: f.dest, size: conv ? (f.sizeOnline || f.size) : f.size, tipo: conv ? "image/jpeg" : (f.tipo || "image/jpeg"), asset: f.asset || null, esportata: !!f.esportata, creata: f.creata || f.scattata || null };
+}
+function ispPerCloud(i) {
+  const doc = { ispezione: i.ispezione, opera: i.opera, cartella: i.cartella, difetti: i.difetti, nuovi: i.nuovi || [], aggiornata: i.aggiornata || new Date().toISOString() };
+  if (i.prec) doc.prec = i.prec;   // foto dell'ultima ispezione: { caricato, odl, data, file, n, foto: { difetto: [asset, dataFoto, idFoto, ispezione] } }
+  if (JSON.stringify(doc).length > 240000) doc.difetti = i.difetti.map(({ note, ...resto }) => resto);
+  return doc;
+}
+
+async function caricaLocale() {
+  try {
+    const [isp, foto] = await Promise.all([lTutti("ispezioni"), lTutti("foto")]);
+    for (const i of isp) S.isp.set(i.id, i);
+    try { for (const r of await lTutti("prec")) mettiPrec(r); } catch (e) { console.warn("foto precedenti", e); }
+    for (const f of foto) {
+      S.foto.set(f.id, Object.assign(f, { locale: !!f.blob }));
+      if (f.inConversione) { f.inConversione = false; f.soloTelefono = true; f.motivo = "conversione interrotta: il telefono si è chiuso o bloccato"; lPut("foto", fotoPerLocale(f)).catch(() => {}); }
+    }
+    if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  } catch (e) { segnalaLocale(e); }
+}
+
+/* ---------------- spazio online (db + assets) ---------------- */
+let _stopIsp = null, _stopFoto = null;
+async function collegaOnline() {
+  const c = window.claude;
+  if (!c || typeof c.use !== "function") {
+    S.cloud = "assente"; S.autonoma = true; avviaAutonoma();
+    S.drive = leggiDrive();
+    const dalLink = urlScript(location.hash);
+    if (dalLink) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
+    disegna();
+    if (dalLink && (!S.drive || S.drive.url !== dalLink)) collegaDrive(dalLink);
+    else if (S.drive) sincronizza();
+    return;
+  }
+  let [db, assets, downloads, user] = await Promise.all([c.use("db"), c.use("assets"), c.use("downloads"), c.use("user")].map((p) => p.catch(() => null)));
+  // Ognuno ha il suo archivio online: il proprietario dell'app usa le raccolte di sempre (visibili solo a lui),
+  // chi è stato invitato usa il proprio spazio privato data/users/<id>/, che nessun altro vede.
+  if (db && user) {
+    let proprietario = true, id = null;
+    try { proprietario = await user.isOwner(); } catch (e) {}
+    S.ruolo = proprietario ? "proprietario" : "invitato";
+    if (!proprietario) {
+      try { id = await user.id(); } catch (e) {}
+      if (id) S.base = "data/users/" + id + "/archivio/";
+      else { db = null; assets = null; S.senzaSpazio = true; }
+    }
+  }
+  S.cap = { db, assets, downloads };
+  S.cloud = db ? "ok" : "assente";
+  if (db) {
+    _stopIsp = db.collection(S.base + "ispezioni").onSnapshot(suSnapIsp, (e) => erroreOnline(e));
+    _stopFoto = db.collection(S.base + "foto").onSnapshot(suSnapFoto, (e) => erroreOnline(e));
+  }
+  disegna();
+  sincronizza();
+}
+/* Fuori da claude.ai (app messa su un sito qualsiasi): niente spazio online, le foto restano sul telefono
+   finche' non si esportano. Se accanto alla pagina ci sono sw.js e manifest.webmanifest, l'app si apre anche
+   senza campo e si installa come app ("Aggiungi a schermata Home"). */
+function avviaAutonoma() {
+  try { document.title = "Foto Cavalcavia"; } catch (e) {}
+  try {
+    if (!document.querySelector('link[rel="manifest"]')) {
+      const l = document.createElement("link"); l.rel = "manifest"; l.href = "manifest.webmanifest"; document.head.appendChild(l);
+    }
+    if ("serviceWorker" in navigator && window.isSecureContext && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(() => {});
+  } catch (e) {}
+}
+function erroreOnline(e) { S.sync.errore = (e && e.code) || "errore"; disegnaTesta(); }
+
+function suSnapIsp(snap) {
+  for (const ch of snap.docChanges()) {
+    const id = ch.doc.id, d = ch.doc.data();
+    const loc = S.isp.get(id);
+    if (ch.type === "removed") {
+      if (loc && loc.sync === "ok") { S.isp.delete(id); lDel("ispezioni", id); }
+      continue;
+    }
+    if (!loc || loc.sync === "ok") {
+      const nuova = Object.assign({ id, sync: "ok" }, JSON.parse(JSON.stringify(d)));
+      S.isp.set(id, nuova); lPut("ispezioni", nuova);
+    }
+  }
+  disegna();
+  allineaPrec();
+}
+/* Foto dell'ultima ispezione caricate su un altro dispositivo (es. il PDF aperto dal PC): qui arrivano solo i
+   riferimenti alle immagini online, che si vedono direttamente da "/_blob/<id>". Niente PDF da riscaricare. */
+let _allineaPrec = false;
+async function allineaPrec() {
+  if (_allineaPrec) return;
+  _allineaPrec = true;
+  let cambiate = false;
+  try {
+    for (const i of [...S.isp.values()]) {
+      const o = i.prec;
+      if (!o || !o.caricato || !o.foto || i.sync === "del") continue;
+      const loc = S.prec.get(i.id), info = loc && loc.info;
+      if (info && info.caricato >= o.caricato) continue;   // gia' uguale, o qui c'e' un PDF piu' recente da mettere online
+      const vecchi = togliPrecMemoria(i.id);
+      const togli = vecchi ? [...vecchi.foto.values()].map((r) => r.id).concat(vecchi.info ? [vecchi.info.id] : []) : [];
+      const nuovi = Object.entries(o.foto).map(([dif, v]) => ({ id: i.id + "|" + dif, isp: i.id, difetto: dif, asset: v[0], dataFoto: v[1] || "", idFoto: v[2] || "", ispezione: v[3] || "" }));
+      nuovi.push({ id: i.id + "|_info", isp: i.id, difetto: "_info", odl: o.odl || "", data: o.data || "", opera: i.opera || "", file: o.file || "", n: o.n || nuovi.length, caricato: o.caricato, online: o.caricato });
+      for (const r of nuovi) mettiPrec(r);
+      await lScrivi("prec", nuovi, togli.filter((k) => !nuovi.some((r) => r.id === k)));
+      cambiate = true;
+    }
+  } finally { _allineaPrec = false; }
+  if (cambiate) disegna();
+}
+function suSnapFoto(snap) {
+  for (const ch of snap.docChanges()) {
+    const id = ch.doc.id, d = ch.doc.data();
+    const f = S.foto.get(id);
+    if (ch.type === "removed") {
+      if (f && (!f.locale || f.sync === "ok")) { S.foto.delete(id); lDel("foto", id); }
+      continue;
+    }
+    const dati = JSON.parse(JSON.stringify(d));
+    if (!f) S.foto.set(id, Object.assign({ id, locale: false, sync: "ok" }, dati));
+    else if (!f.locale) Object.assign(f, dati);
+    else if (f.sync === "ok") { f.dest = dati.dest; f.esportata = dati.esportata; f.asset = dati.asset || f.asset; lPut("foto", fotoPerLocale(f)); }
+  }
+  disegna();
+}
+
+/* Foto la cui scheda non c'e' (o e' in eliminazione) su questo dispositivo: senza scheda non si vedono e non si
+   esportano. Ricaricando il report di quell'ispezione la scheda torna con lo stesso numero e le foto ci si riattaccano. */
+function fotoSenzaScheda() {
+  const g = new Map();
+  for (const f of S.foto.values()) {
+    if (f.sync === "del") continue;
+    const i = S.isp.get(f.isp);
+    if (i && i.sync !== "del") continue;
+    const k = f.isp || "?";
+    if (!g.has(k)) g.set(k, { isp: k, tot: 0, soloQui: 0, online: 0 });
+    const r = g.get(k); r.tot++;
+    if (f.locale && f.sync !== "ok") r.soloQui++; else r.online++;
+  }
+  return [...g.values()].sort((a, b) => naturale(a.isp, b.isp));
+}
+function htmlSenzaScheda() {
+  const lista = fotoSenzaScheda();
+  if (!lista.length) return "";
+  let h = `<h2 class="sez">Foto senza scheda</h2><div class="avviso warn"><b>Ci sono foto di ispezioni la cui scheda non è su questo dispositivo.</b> Per vederle ed esportarle tocca «Ricarica il report» e scegli il report «Riepilogo difetti Livello 1» di quell'ispezione: la scheda torna con le foto già assegnate ai difetti.</div><div class="gest" style="margin-top:10px">`;
+  for (const r of lista) {
+    h += `<div class="gest-isp"><div class="nome">Ispezione ${esc(r.isp)}</div><div class="meta"><span><b>${r.tot}</b> ${r.tot === 1 ? "foto" : "foto"}${r.online ? ` · ${r.online} salvate online` : ""}${r.soloQui ? ` · <span class="att">${r.soloQui} solo su questo dispositivo</span>` : ""}</span></div>` +
+      `<div class="bt"><button class="btn picc" data-ricarica="${esc(r.isp)}">Ricarica il report</button></div></div>`;
+  }
+  return h + `</div>`;
+}
+
+function daCaricare() {
+  let n = 0;
+  for (const f of S.foto.values()) if (f.locale && f.sync !== "ok" && !f.soloTelefono) n++;
+  if (S.drive && S.autonoma) { for (const i of S.isp.values()) if (i.sync !== "del" && !ispFattaDrive(i)) n++; return n; }
+  for (const i of S.isp.values()) if (i.sync !== "ok") n++;
+  if (S.cap.assets) for (const id of S.prec.keys()) if (precDaInviare(id)) n++;
+  return n;
+}
+
+/* ---------------- foto che lo spazio online non accetta ----------------
+   Lo spazio online accetta JPEG, PNG, WebP e GIF e controlla il contenuto del file, non solo il tipo dichiarato dal
+   telefono. Prima di caricare si legge il formato vero dai primi byte; un HEIC (o altro formato che il telefono sa
+   aprire) va online come copia JPEG, l'originale resta intatto sul telefono. Se non si riesce, la foto resta solo sul
+   telefono (si esporta lo stesso per il PC), il motivo si vede in «Stato dell'app» e non blocca le altre foto.
+   Errori che riguardano tutto (spazio pieno, troppe richieste, accesso) fermano il giro e si riprova piu' tardi. */
+const ERR_FILE = ["unsupported_type", "too_large"];
+const ERR_GLOBALI = ["quota_or_state", "quota_exceeded", "resource_exhausted", "rate_limited", "upstream_auth", "not_granted", "capability_disabled",
+  "capability_removed", "store_unavailable", "unavailable", "revoked", "permission_denied", "forbidden", "unauthenticated"];
+const MAX_FALLIMENTI = 3;
+async function formatoReale(blob) {
+  try {
+    if (!blob || !blob.size) return "vuoto";
+    const b = new Uint8Array(await blob.slice(0, 32).arrayBuffer());
+    if (b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return "image/jpeg";
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4e && b[3] === 0x47) return "image/png";
+    const s = String.fromCharCode(...b);
+    if (s.startsWith("RIFF") && s.slice(8, 12) === "WEBP") return "image/webp";
+    if (s.startsWith("GIF8")) return "image/gif";
+    if (s.slice(4, 8) === "ftyp") {   // contenitore ISO: la «marca» dice se e' una foto HEIC/AVIF o un video
+      const marca = s.slice(8, 12);
+      if (/^(heic|heix|heim|heis|hevc|hevx|hevm|hevs|mif1|mif2|msf1)$/.test(marca)) return "image/heic";
+      if (/^avi[fs]$/.test(marca)) return "image/avif";
+      return "video";
+    }
+    if (s.startsWith("II*\0") || s.startsWith("MM\0*")) return "image/tiff";
+    if (s.startsWith("BM")) return "image/bmp";
+    if (s.startsWith("%PDF")) return "pdf";
+    if (/^(\xef\xbb\xbf)?\s*</.test(s)) return "testo";
+    return "sconosciuto";
+  } catch (e) { return "illeggibile"; }
+}
+function nomeFormato(t) {
+  return { "image/jpeg": "JPEG", "image/png": "PNG", "image/webp": "WebP", "image/gif": "GIF", "image/heic": "HEIC", "image/avif": "AVIF", "image/tiff": "TIFF", "image/bmp": "BMP", video: "video", pdf: "PDF", testo: "non immagine", vuoto: "file vuoto", illeggibile: "file non leggibile", sconosciuto: "sconosciuto" }[t] || t || "?";
+}
+async function inJpeg(blob) {
+  let src = null, url = "", c = null;
+  try {
+    try { src = await createImageBitmap(blob, { imageOrientation: "from-image" }); }   // foto verticali restano verticali
+    catch (e) {
+      url = URL.createObjectURL(blob);
+      src = await new Promise((ok, ko) => { const im = new Image(); im.onload = () => ok(im); im.onerror = () => ko(new Error("immagine non decodificabile")); im.src = url; });
+    }
+    const w0 = src.naturalWidth || src.width, h0 = src.naturalHeight || src.height;
+    if (!w0 || !h0) throw new Error("immagine vuota");
+    const k = Math.min(1, Math.sqrt(16e6 / (w0 * h0)));   // i telefoni non disegnano oltre ~16 Mpx
+    const w = Math.max(1, Math.round(w0 * k)), h = Math.max(1, Math.round(h0 * k));
+    c = document.createElement("canvas"); c.width = w; c.height = h;
+    const g = c.getContext("2d");
+    if (!g) throw new Error("memoria del telefono insufficiente");
+    g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);          // le parti trasparenti vengono bianche, non nere
+    g.drawImage(src, 0, 0, w, h);
+    let out = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.92));
+    if (out && out.size > LIMITE_ASSET) out = await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.8));
+    if (!out || !out.size) throw new Error("conversione non riuscita");
+    return out;
+  } finally {
+    if (src && src.close) src.close();
+    if (url) URL.revokeObjectURL(url);
+    if (c) c.width = c.height = 0;                         // libera subito la memoria (iPhone)
+  }
+}
+// copia JPEG tenuta in memoria finche' non e' online (nessuna nuova conversione a ogni tentativo).
+// Prima di convertire si segna sul telefono: se l'app si chiude durante la conversione, al riavvio non riprova da sola.
+async function copiaJpeg(f) {
+  if (f._jpeg) return f._jpeg;
+  f.inConversione = true; await salvaLocale(f);
+  try { f._jpeg = await inJpeg(f.blob); return f._jpeg; }
+  finally { f.inConversione = false; await salvaLocale(f); }
+}
+async function rifiuta(f, motivo) { f.soloTelefono = true; f.motivo = motivo; f._jpeg = null; await salvaLocale(f); return "qui"; }
+const codiceErrore = (e) => (e && typeof e.code === "string" && e.code) || "errore";
+// esito: "ok" (online) | "qui" (resta sul telefono) | "errore" (riprova piu' tardi) | "eliminata"; lancia per gli errori globali
+async function caricaFoto(assets, f) {
+  const reale = await formatoReale(f.blob);
+  f.formato = reale;
+  if (["illeggibile", "vuoto", "testo", "video", "pdf"].includes(reale)) return rifiuta(f, nomeFormato(reale));
+  const daConvertire = !TIPI_ONLINE.includes(reale) || f.blob.size > LIMITE_ASSET;
+  let blob = f.blob, tipo = reale;
+  if (daConvertire) {
+    try { blob = await copiaJpeg(f); tipo = "image/jpeg"; }
+    catch (e) { return rifiuta(f, `formato ${nomeFormato(reale)}: il telefono non riesce a convertirlo`); }
+  }
+  const prova = async (b, t, conv) => {
+    const r = await assets.upload(b, { type: t });
+    if (S.foto.get(f.id) !== f || f.sync === "del") { try { await assets.delete(r.id); } catch (e) {} return "eliminata"; }   // eliminata mentre saliva
+    f.asset = r.id; f.convertita = conv; f.sizeOnline = b.size; f._jpeg = null; f.fallimenti = 0; f._errore = "";
+    return "ok";
+  };
+  try { return await prova(blob, tipo, daConvertire); }
+  catch (e) {
+    const code = codiceErrore(e);
+    if (ERR_GLOBALI.includes(code)) throw e;
+    if (!ERR_FILE.includes(code)) { f._errore = code; return "errore"; }
+    if (!daConvertire) {                               // ultimo tentativo: una copia JPEG ricodificata
+      let j = null; try { j = await copiaJpeg(f); } catch (e2) {}
+      if (j) {
+        try { return await prova(j, "image/jpeg", true); }
+        catch (e3) { const c3 = codiceErrore(e3); if (ERR_GLOBALI.includes(c3)) throw e3; if (!ERR_FILE.includes(c3)) { f._errore = c3; return "errore"; } }
+      }
+    }
+    return rifiuta(f, `rifiutata online (${code})`);
+  }
+}
+function fotoRifiutate() { return [...S.foto.values()].filter((f) => f.soloTelefono && f.locale && f.sync !== "ok" && f.sync !== "del"); }
+function precRifiutate() { let n = 0; for (const p of S.prec.values()) for (const r of p.foto.values()) if (r.rifiutata && !r.asset) n++; return n; }
+
+let _timerSync = null;
+function programmaSync(ms) { clearTimeout(_timerSync); _timerSync = setTimeout(sincronizza, ms); }
+async function sincronizza() {
+  if (S.drive && S.autonoma) return sincronizzaDrive();
+  const { db, assets } = S.cap;
+  if (!db) return;
+  if (S.sync.inCorso) { S.sync.ancora = true; return; }   // rifà un giro appena finisce quello in corso
+  S.sync.ancora = false;
+  if (navigator.onLine === false) { disegnaTesta(); return; }
+  S.sync.inCorso = true; S.sync.errore = ""; S.sync.fotoErrore = ""; disegnaTesta();
+  let riuscite = 0; const fallite = [];
+  try {
+    for (const i of [...S.isp.values()]) {
+      if (i.sync === "ok") continue;
+      if (i.sync === "del") {
+        if (assets) for (const a of assetPrec(i)) { try { await assets.delete(a); } catch (e) {} }
+        await db.doc(S.base + "ispezioni/" + i.id).delete(); S.isp.delete(i.id); await lDel("ispezioni", i.id); continue;
+      }
+      // se l'ispezione cambia mentre la scrivo (nuovo difetto, report ricaricato) resta da rifare al giro dopo
+      if (!i.aggiornata) i.aggiornata = new Date().toISOString();
+      const scritto = JSON.stringify(ispPerCloud(i));
+      await db.doc(S.base + "ispezioni/" + i.id).set(JSON.parse(scritto));
+      if (S.isp.get(i.id) === i && JSON.stringify(ispPerCloud(i)) === scritto) { i.sync = "ok"; await lPut("ispezioni", i); }
+      else S.sync.ancora = true;
+    }
+    for (const f of [...S.foto.values()]) {
+      if (S.foto.get(f.id) !== f || f.sync === "ok") continue;
+      if (f.sync === "del") {
+        if (f.asset && assets) await assets.delete(f.asset);
+        await db.doc(S.base + "foto/" + f.id).delete();
+        S.foto.delete(f.id); await lDel("foto", f.id); liberaMini(f.id);
+        continue;
+      }
+      if (f.soloTelefono) continue;
+      if (!f.asset && f.locale) {
+        if (!assets) break;
+        const esito = await caricaFoto(assets, f);
+        if (esito === "eliminata" || esito === "qui") { disegnaTesta(); continue; }
+        if (esito === "errore") { fallite.push(f); continue; }   // problema di questa foto (o passeggero): si va avanti con le altre
+        riuscite++;
+        await salvaLocale(f);
+      }
+      if (S.foto.get(f.id) !== f || f.sync === "del") { S.sync.ancora = true; continue; }
+      // se la foto cambia mentre la scrivo (difetti, esportata, eliminata) resta da rifare al giro dopo
+      const scritto = JSON.stringify(fotoPerCloud(f));
+      await db.doc(S.base + "foto/" + f.id).set(JSON.parse(scritto));
+      if (S.foto.get(f.id) === f && f.sync !== "del" && JSON.stringify(fotoPerCloud(f)) === scritto) { f.sync = "ok"; await salvaLocale(f); }
+      else S.sync.ancora = true;
+      disegnaTesta();
+    }
+    // foto che non salgono per un errore non previsto: se intanto altre foto salgono, il problema e' di quella foto e
+    // dopo MAX_FALLIMENTI giri resta sul telefono; se non sale niente e' un problema dello spazio online e si riprova
+    for (const f of fallite) {
+      if (S.foto.get(f.id) !== f) continue;
+      f.fallimenti = (f.fallimenti || 0) + 1;
+      if (riuscite && f.fallimenti >= MAX_FALLIMENTI) await rifiuta(f, `errore ripetuto online (${f._errore || "errore"})`);
+      else await salvaLocale(f);
+    }
+    // foto dell'ultima ispezione lette da un PDF su questo dispositivo: le immagini vanno online una per una
+    // (piccole, gia' estratte dal PDF) e nel documento dell'ispezione restano solo i riferimenti
+    for (const id of [...S.prec.keys()]) {
+      if (!assets || !precDaInviare(id)) continue;
+      const p = S.prec.get(id), info = p.info;
+      let incompleto = "";
+      for (const r of p.foto.values()) {
+        if (r.asset || !r.blob || r.rifiutata) continue;
+        const reale = await formatoReale(r.blob);
+        if (!TIPI_ONLINE.includes(reale) || r.blob.size > LIMITE_ASSET) { r.rifiutata = reale; continue; }
+        try {
+          const up = await assets.upload(r.blob, { type: reale });
+          r.asset = up.id; await lPut("prec", r);
+        } catch (e) {
+          const code = codiceErrore(e);
+          if (ERR_GLOBALI.includes(code)) throw e;
+          r.fallimenti = (r.fallimenti || 0) + 1;
+          if (ERR_FILE.includes(code) || r.fallimenti >= MAX_FALLIMENTI) r.rifiutata = code;   // resta solo qui: si vede lo stesso su questo dispositivo
+          else incompleto = code;
+        }
+        disegnaTesta();
+      }
+      if (S.prec.get(id) !== p || !S.isp.get(id) || S.isp.get(id).sync === "del") continue;   // cambiato nel frattempo
+      const foto = {};
+      for (const r of p.foto.values()) if (r.asset) foto[r.difetto] = [r.asset, r.dataFoto || "", r.idFoto || "", r.ispezione || ""];
+      const isp = S.isp.get(id), prima = assetPrec(isp), nuovi = new Set(Object.values(foto).map((v) => v[0]));
+      isp.prec = { caricato: info.caricato, odl: info.odl || "", data: info.data || "", file: info.file || "", n: info.n || 0, foto };
+      await db.doc(S.base + "ispezioni/" + id).set(ispPerCloud(isp));
+      await lPut("ispezioni", isp);
+      if (!incompleto) { info.online = info.caricato; await lPut("prec", info); }
+      else { S.sync.errore = S.sync.errore || incompleto; }
+      for (const a of prima) if (!nuovi.has(a)) { try { await assets.delete(a); } catch (e) {} }
+      disegnaTesta();
+    }
+    if (fallite.length && !riuscite) {
+      const f = fallite.find((x) => S.foto.get(x.id) === x && !x.soloTelefono);
+      if (f) { S.sync.errore = f._errore || "errore"; S.sync.fotoErrore = f.nome || f.id; }
+    }
+    if (S.sync.errore) {   // nessun progresso: si riprova con attese crescenti (30 s, 1, 2, 4… fino a 10 minuti)
+      S.sync.attesa = Math.min(600000, (S.sync.attesa || 15000) * 2);
+      programmaSync(S.sync.attesa);
+    } else {
+      S.sync.attesa = 0;
+      if (fallite.some((x) => S.foto.get(x.id) === x && !x.soloTelefono)) programmaSync(30000);
+    }
+  } catch (e) {
+    const code = codiceErrore(e);
+    S.sync.errore = code === "quota_or_state" || code === "quota_exceeded" ? "pieno" : code;
+    programmaSync(S.sync.errore === "pieno" ? 300000 : code === "rate_limited" || code === "resource_exhausted" ? 60000 : 30000);
+  } finally {
+    S.sync.inCorso = false;
+    disegna();
+    if (S.sync.ancora && !S.sync.errore) programmaSync(50);
+  }
+}
+window.addEventListener("online", () => programmaSync(500));
+document.addEventListener("error", (e) => { if (e.target && e.target.tagName === "IMG") e.target.classList.add("rotta"); }, true);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) programmaSync(800); });
+
+
+/* ---------------- Google Drive (versione autonoma) ----------------
+   Fuori da claude.ai l'app manda ogni foto direttamente in una cartella di Google Drive, attraverso un piccolo script
+   Google (Apps Script) installato dal proprietario del Drive. Basta il link dello script: chi lo ha (anche piu'
+   persone, o piu' telefoni con lo stesso account) scrive nella stessa cartella. Sul Drive:
+     <cartella>/<cartella ispezione>/_ispezione.json            difetti dell'ispezione
+     <cartella>/<cartella ispezione>/foto/<id>.<est>            la foto, originale
+     <cartella>/<cartella ispezione>/foto/<id>.json             i difetti a cui e' assegnata
+   Sul PC 2_IMPORTA_DAL_TELEFONO legge da li' (la cartella arriva sul PC con Drive per desktop). */
+const CHIAVE_DRIVE = "argo-drive";
+const LIMITE_DRIVE = 35 * 1024 * 1024;   // lo script riceve al massimo ~50 MB e la foto viaggia in base64
+const ERR_DRIVE_GLOBALI = ["rete", "rate_limited", "drive_risposta", "drive_http_401", "drive_http_403", "drive_http_404", "drive_http_500", "drive_http_502", "drive_http_503"];
+function leggiDrive() { try { const d = JSON.parse(localStorage.getItem(CHIAVE_DRIVE) || "null"); return d && urlScript(d.url) ? d : null; } catch (e) { return null; } }
+function scriviDrive(d) { try { if (d) localStorage.setItem(CHIAVE_DRIVE, JSON.stringify(d)); else localStorage.removeItem(CHIAVE_DRIVE); } catch (e) {} }
+// accetta il link dello script (…/exec) o il link dell'app con #drive=…
+function urlScript(testo) {
+  let s = String(testo || "").trim();
+  const m = /[#&?]drive=([^&\s]+)/.exec(s);
+  if (m) { try { s = decodeURIComponent(m[1]); } catch (e) { return ""; } }
+  return /^https:\/\/script\.google\.com\/macros\/s\/[A-Za-z0-9_-]{20,}\/exec$/.test(s) ? s : "";
+}
+function linkApp(url) { return location.origin + location.pathname + "#drive=" + encodeURIComponent(url); }
+function idDispositivo() { try { let d = localStorage.getItem("argo-dispositivo"); if (!d) { d = nuovoId().slice(1); localStorage.setItem("argo-dispositivo", d); } return d; } catch (e) { return "?"; } }
+function hashTesto(t) { let h = 5381; for (let k = 0; k < t.length; k++) h = ((h << 5) + h + t.charCodeAt(k)) | 0; return (h >>> 0).toString(36) + "." + t.length; }
+const b64di = (blob) => new Promise((ok, ko) => { const r = new FileReader(); r.onload = () => ok(String(r.result).slice(String(r.result).indexOf(",") + 1)); r.onerror = () => ko(r.error || new Error("lettura")); r.readAsDataURL(blob); });
+async function chiamaDrive(dati, ms = 180000) {
+  const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);
+  let r;
+  // corpo in testo semplice: nessuna richiesta preliminare, lo script risponde anche da un altro sito
+  try { r = await fetch(S.drive.url, { method: "POST", body: JSON.stringify(dati), redirect: "follow", signal: ctl.signal }); }
+  catch (e) { throw { code: "rete", message: String((e && e.message) || e) }; }
+  finally { clearTimeout(t); }
+  if (!r.ok) throw { code: r.status === 429 ? "rate_limited" : "drive_http_" + r.status };
+  let j = null;
+  try { j = await r.json(); } catch (e) { throw { code: "drive_risposta" }; }   // es. pagina di accesso Google: script non aperto a «Chiunque»
+  if (!j || !j.ok) throw { code: "drive_errore", message: (j && j.errore) || "" };
+  return j;
+}
+function spiegaErroreDrive(c, m) {
+  return ({
+    rete: "Il Drive non risponde: manca il campo o il link non è più valido.",
+    drive_risposta: "Lo script non è aperto a tutti: in Apps Script, Esegui il deployment › Gestisci deployment › Chi ha accesso: «Chiunque».",
+    drive_http_404: "Il link del Drive non esiste più: chiedi il link nuovo a chi gestisce il Drive.",
+    rate_limited: "Troppe richieste a Google: riprovo tra poco.",
+    drive_errore: "Lo script del Drive ha dato un errore" + (m ? ": " + m : "."),
+  })[c] || c;
+}
+async function collegaDrive(testo, silenzioso) {
+  const url = urlScript(testo);
+  if (!url) { if (!silenzioso) mostraToast("<b>Link non valido</b>Serve il link dell'app ricevuto da chi gestisce il Drive, o il link dello script che finisce con /exec.", null, 6000); return false; }
+  const prima = S.drive;
+  S.drive = { url };
+  try {
+    const j = await chiamaDrive({ a: "ping" }, 30000);
+    S.drive = { url, cartella: String(j.cartella || ""), proprietario: String(j.proprietario || ""), collegato: new Date().toISOString() };
+    scriviDrive(S.drive);
+    if (!prima || prima.url !== url) {
+      // Drive nuovo: tutto quello che e' su questo telefono va mandato anche li'
+      for (const f of S.foto.values()) if (f.locale && f.sync !== "del" && f.driveUrl !== url) { f.drive = null; f.driveUrl = ""; if (f.sync === "ok" || f.sync === "mod") f.sync = "nuova"; f.soloTelefono = false; f.motivo = ""; f.fallimenti = 0; await salvaLocale(f); }
+      for (const i of S.isp.values()) i.driveFatto = "";
+    }
+    mostraToast(`<b>Collegata a Google Drive</b>Le foto vanno nella cartella «${esc(S.drive.cartella || "?")}»${S.drive.proprietario ? " di " + esc(S.drive.proprietario) : ""}.`, null, 6000);
+    disegna(); if (S.statoAperto) disegnaStato(); sincronizza();
+    return true;
+  } catch (e) {
+    S.drive = prima;
+    mostraToast(`<b>Collegamento al Drive non riuscito</b>${esc(spiegaErroreDrive(codiceErrore(e), e && e.message))}`, null, 8000);
+    return false;
+  }
+}
+function scollegaDrive() { S.drive = null; scriviDrive(null); S.sync.errore = ""; disegna(); if (S.statoAperto) disegnaStato(); }
+function cartellaDrive(i) { return String((i && (i.cartella || [i.ispezione, i.opera].filter(Boolean).join("_"))) || "senza_ispezione"); }
+function ispPerDrive(i) { return { formato: "argo-foto-drive", versione: 1, ispezione: i.ispezione || "", opera: i.opera || "", cartella: i.cartella || "", difetti: i.difetti || [], nuovi: i.nuovi || [] }; }
+function ispFattaDrive(i) { return !!S.drive && i.driveFatto === S.drive.url + "|" + hashTesto(JSON.stringify(ispPerDrive(i))); }
+function metaDrive(f, i, nome) { return { formato: "argo-foto-drive", versione: 1, id: f.id, nome, scattata: f.scattata || "", dest: f.dest || [], ispezione: (i && i.ispezione) || f.isp || "", dispositivo: idDispositivo() }; }
+const MIME_EST = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", heic: "image/heic", heif: "image/heif", avif: "image/avif", tif: "image/tiff", tiff: "image/tiff", bmp: "image/bmp", mp4: "video/mp4", mov: "video/quicktime" };
+// esito: "ok" | "qui" (resta sul telefono) | "errore" (riprova piu' tardi) | "eliminata"; lancia per gli errori che riguardano tutto
+async function mandaFotoDrive(f, i, cartella) {
+  const formato = await formatoReale(f.blob);
+  f.formato = formato;
+  if (formato === "illeggibile" || formato === "vuoto") return rifiuta(f, nomeFormato(formato));
+  if (f.blob.size > LIMITE_DRIVE) return rifiuta(f, "troppo grande per il Drive (oltre 35 MB)");
+  const nome = nomeConFormato(f.nome || "foto.jpg", formato);
+  const est = ((/\.([a-z0-9]{1,5})$/i.exec(nome) || [, "jpg"])[1]).toLowerCase();
+  const file = f.id + "." + est, meta = metaDrive(f, i, nome);
+  let b64;
+  try { b64 = await b64di(f.blob); } catch (e) { return rifiuta(f, "file non leggibile"); }
+  try {
+    const j = await chiamaDrive({ a: "foto", cartella, id: f.id, file, mime: MIME_EST[est] || f.tipo || "application/octet-stream", size: f.blob.size, meta, b64 }, 600000);
+    if (S.foto.get(f.id) !== f || f.sync === "del") { try { await chiamaDrive({ a: "elimina", cartella, id: f.id, file }); } catch (e) {} return "eliminata"; }   // eliminata mentre saliva
+    Object.assign(f, { drive: String(j.file || "ok"), driveFile: file, driveNome: nome, driveCartella: cartella, driveUrl: S.drive.url, driveDest: JSON.stringify(meta.dest), fallimenti: 0, _errore: "" });
+    return "ok";
+  } catch (e) {
+    const code = codiceErrore(e);
+    if (code !== "drive_errore") throw e;
+    f._errore = "drive: " + ((e && e.message) || "errore").slice(0, 80);
+    return "errore";
+  }
+}
+async function sincronizzaDrive() {
+  if (S.sync.inCorso) { S.sync.ancora = true; return; }
+  S.sync.ancora = false;
+  if (navigator.onLine === false) { disegnaTesta(); return; }
+  S.sync.inCorso = true; S.sync.errore = ""; S.sync.fotoErrore = ""; S.sync.messaggio = ""; disegnaTesta();
+  const url = S.drive.url;
+  let riuscite = 0; const fallite = [];
+  try {
+    for (const i of [...S.isp.values()]) {
+      if (i.sync === "del" || ispFattaDrive(i)) continue;
+      const dati = ispPerDrive(i), testo = JSON.stringify(dati);
+      await chiamaDrive({ a: "ispezione", cartella: cartellaDrive(i), dati });
+      if (S.isp.get(i.id) === i && S.drive && S.drive.url === url) { i.driveFatto = url + "|" + hashTesto(testo); await lPut("ispezioni", i); }
+    }
+    for (const f of [...S.foto.values()]) {
+      if (S.foto.get(f.id) !== f || !f.locale) continue;
+      if (!S.drive || S.drive.url !== url) break;   // Drive cambiato nel frattempo
+      const i = S.isp.get(f.isp);
+      if (f.sync === "del") {
+        if (f.drive && f.driveUrl === url) await chiamaDrive({ a: "elimina", cartella: f.driveCartella || cartellaDrive(i), id: f.id, file: f.driveFile });
+        S.foto.delete(f.id); await lDel("foto", f.id); liberaMini(f.id);
+        continue;
+      }
+      if (f.sync === "ok" || f.soloTelefono) continue;
+      if (!i || i.sync === "del") continue;   // foto senza scheda: la scheda va ricaricata, poi parte
+      if (!f.drive) {
+        const esito = await mandaFotoDrive(f, i, cartellaDrive(i));
+        if (esito === "eliminata" || esito === "qui") { disegnaTesta(); continue; }
+        if (esito === "errore") { fallite.push(f); continue; }
+        riuscite++;
+      } else if (f.driveDest !== JSON.stringify(f.dest)) {   // gia' su Drive: cambiano solo i difetti
+        const meta = metaDrive(f, i, f.driveNome || f.nome), dest = JSON.stringify(meta.dest);
+        await chiamaDrive({ a: "meta", cartella: f.driveCartella || cartellaDrive(i), id: f.id, meta });
+        f.driveDest = dest;
+      }
+      if (S.foto.get(f.id) === f && f.sync !== "del" && f.driveDest === JSON.stringify(f.dest)) { f.sync = "ok"; await salvaLocale(f); }
+      else S.sync.ancora = true;
+      disegnaTesta();
+    }
+    for (const f of fallite) {
+      if (S.foto.get(f.id) !== f) continue;
+      f.fallimenti = (f.fallimenti || 0) + 1;
+      if (riuscite && f.fallimenti >= MAX_FALLIMENTI) await rifiuta(f, `errore ripetuto del Drive (${f._errore || "errore"})`);
+      else await salvaLocale(f);
+    }
+    if (fallite.length && !riuscite) {
+      const f = fallite.find((x) => S.foto.get(x.id) === x && !x.soloTelefono);
+      if (f) { S.sync.errore = "drive_errore"; S.sync.messaggio = (f._errore || "").replace(/^drive: /, ""); S.sync.fotoErrore = f.nome || f.id; }
+    }
+    if (S.sync.errore) { S.sync.attesa = Math.min(600000, (S.sync.attesa || 15000) * 2); programmaSync(S.sync.attesa); }
+    else { S.sync.attesa = 0; if (fallite.some((x) => S.foto.get(x.id) === x && !x.soloTelefono)) programmaSync(30000); }
+  } catch (e) {
+    const code = codiceErrore(e);
+    S.sync.errore = code; S.sync.messaggio = (e && e.message) || "";
+    S.sync.attesa = Math.min(600000, (S.sync.attesa || 15000) * 2);
+    programmaSync(code === "rate_limited" ? Math.max(60000, S.sync.attesa) : S.sync.attesa);
+  } finally {
+    S.sync.inCorso = false;
+    disegna();
+    if (S.sync.ancora && !S.sync.errore) programmaSync(50);
+  }
+}
+// al sicuro = esportata per il PC o gia' su Drive (si puo' togliere dal telefono)
+function suDrive(f) { return !!S.drive && f.sync === "ok" && !!f.drive && f.driveUrl === S.drive.url; }
+function alSicuro(f) { return !!f.esportata || suDrive(f); }
+
+/* ---------------- lettura dell'elenco difetti ---------------- */
+function normIntest(h) { return String(h || "").replace(/’/g, "'").replace(/\s+/g, " ").trim().toUpperCase(); }
+function pulisci(v) { let s = String(v ?? "").trim(); if (/^-?\d+\.0+$/.test(s)) s = s.split(".")[0]; return s; }
+
+async function leggiZip(buf) {
+  const dv = new DataView(buf);
+  let p = buf.byteLength - 22;
+  while (p >= 0 && dv.getUint32(p, true) !== 0x06054b50) p--;
+  if (p < 0) throw new Error("non_zip");
+  const n = dv.getUint16(p + 10, true);
+  let q = dv.getUint32(p + 16, true);
+  const voci = {};
+  const td = new TextDecoder();
+  for (let k = 0; k < n; k++) {
+    const metodo = dv.getUint16(q + 10, true), csize = dv.getUint32(q + 20, true);
+    const nl = dv.getUint16(q + 28, true), el = dv.getUint16(q + 30, true), cl = dv.getUint16(q + 32, true), off = dv.getUint32(q + 42, true);
+    voci[td.decode(new Uint8Array(buf, q + 46, nl))] = { metodo, csize, off };
+    q += 46 + nl + el + cl;
+  }
+  return {
+    ha: (nome) => !!voci[nome],
+    async testo(nome) {
+      const v = voci[nome]; if (!v) return null;
+      const lnl = dv.getUint16(v.off + 26, true), lel = dv.getUint16(v.off + 28, true);
+      const dati = new Uint8Array(buf, v.off + 30 + lnl + lel, v.csize);
+      let out = dati;
+      if (v.metodo === 8) out = new Uint8Array(await new Response(new Blob([dati]).stream().pipeThrough(new DecompressionStream("deflate-raw"))).arrayBuffer());
+      return new TextDecoder().decode(out);
+    },
+  };
+}
+function colIndice(rif) { const m = /^[A-Z]+/.exec(rif); let n = 0; for (const ch of m[0]) n = n * 26 + ch.charCodeAt(0) - 64; return n - 1; }
+async function righeXlsx(buf) {
+  const z = await leggiZip(buf);
+  const xml = (t) => new DOMParser().parseFromString(t, "application/xml");
+  const condivise = [];
+  const ss = await z.testo("xl/sharedStrings.xml");
+  if (ss) for (const si of xml(ss).getElementsByTagName("si")) condivise.push([...si.getElementsByTagName("t")].map((t) => t.textContent).join(""));
+  let foglio = "xl/worksheets/sheet1.xml";
+  const wb = await z.testo("xl/workbook.xml"), rels = await z.testo("xl/_rels/workbook.xml.rels");
+  if (wb && rels) {
+    const s1 = xml(wb).getElementsByTagName("sheet")[0];
+    const rid = s1 && (s1.getAttribute("r:id") || s1.getAttributeNS("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id"));
+    for (const r of xml(rels).getElementsByTagName("Relationship")) if (r.getAttribute("Id") === rid) {
+      let t = r.getAttribute("Target").replace(/^\//, ""); foglio = t.startsWith("xl/") ? t : "xl/" + t;
+    }
+  }
+  const sh = await z.testo(foglio);
+  if (!sh) throw new Error("foglio");
+  const righe = [];
+  for (const row of xml(sh).getElementsByTagName("row")) {
+    const r = []; let ultimo = -1;
+    for (const c of row.getElementsByTagName("c")) {
+      const rif = c.getAttribute("r"); const i = rif ? colIndice(rif) : ultimo + 1; ultimo = i;
+      const t = c.getAttribute("t"); const v = c.getElementsByTagName("v")[0];
+      let val = "";
+      if (t === "s" && v) val = condivise[+v.textContent] ?? "";
+      else if (t === "inlineStr") val = [...c.getElementsByTagName("t")].map((x) => x.textContent).join("");
+      else if (v) val = v.textContent;
+      r[i] = val;
+    }
+    righe.push(Array.from(r, (x) => x ?? ""));
+  }
+  return righe;
+}
+function righeCsv(testo) {
+  testo = testo.replace(/^﻿/, "");
+  const sep = (testo.split("\n")[0].match(/;/g) || []).length >= (testo.split("\n")[0].match(/,/g) || []).length ? ";" : ",";
+  const righe = []; let r = [], v = "", q = false;
+  for (let k = 0; k < testo.length; k++) {
+    const ch = testo[k];
+    if (q) { if (ch === '"') { if (testo[k + 1] === '"') { v += '"'; k++; } else q = false; } else v += ch; continue; }
+    if (ch === '"') q = true;
+    else if (ch === sep) { r.push(v); v = ""; }
+    else if (ch === "\n") { r.push(v.replace(/\r$/, "")); righe.push(r); r = []; v = ""; }
+    else v += ch;
+  }
+  if (v || r.length) { r.push(v.replace(/\r$/, "")); righe.push(r); }
+  return righe;
+}
+const COL = {
+  ispezione: ["ULTIMA ISPEZIONE", "ISPEZIONE"],
+  opera: ["DENOMINAZIONE OPERA PARZIALE", "OPERA"],
+  parte: ["DENOMINAZIONE PARTE D'OPERA", "PARTE D'OPERA"],
+  componente: ["DENOMINAZIONE COMPONENTE", "COMPONENTE"],
+  id: ["ID DIFETTO"],
+  descrizione: ["DESCRIZIONE TIPO DIFETTO ULTIMA ISPEZIONE", "DESCRIZIONE"],
+  tipo: ["TIPO DIFETTO ULTIMA ISPEZIONE", "TIPO DIFETTO"],
+  stato: ["STATO DIFETTO ULTIMA ISPEZIONE", "STATO"],
+  g: ["G ULTIMA ISPEZIONE", "G"], e: ["E ULTIMA ISPEZIONE", "E"], i: ["I ULTIMA ISPEZIONE", "I"],
+  ps: ["PS STRUTT. FOND. ULTIMA ISPEZIONE", "PS"], ec: ["EC STRUTT. FOND. ULTIMA ISPEZIONE", "EC"],
+  note: ["NOTE DIFETTO ULTIMA ISPEZIONE", "NOTE"],
+};
+function difettiDaRighe(righe, nomeFile) {
+  let h = -1, intest = [];
+  for (let k = 0; k < Math.min(20, righe.length); k++) { const n = righe[k].map(normIntest); if (n.includes("ID DIFETTO")) { h = k; intest = n; break; } }
+  if (h < 0) throw new Error("Nel file non trovo la colonna «ID DIFETTO». Serve il report «Riepilogo difetti Livello 1» di ARGO (xlsx) o il file _elenco_difetti.csv.");
+  const pos = {};
+  for (const [k, nomi] of Object.entries(COL)) for (const nome of nomi) { const i = intest.indexOf(nome); if (i >= 0) { pos[k] = i; break; } }
+  for (const k of ["parte", "componente", "id", "descrizione"]) if (pos[k] == null) throw new Error("Nel file manca la colonna «" + COL[k][0] + "».");
+  const gruppi = new Map(), visti = new Set();
+  for (const r of righe.slice(h + 1)) {
+    const d = {}; for (const k of Object.keys(COL)) d[k] = pos[k] != null ? pulisci(r[pos[k]]) : "";
+    if (!d.id || visti.has(d.id)) continue; visti.add(d.id);
+    if (d.note.length > 220) d.note = d.note.slice(0, 217) + "...";
+    const chiave = (d.ispezione || "") + "|" + (d.opera || "");
+    if (!gruppi.has(chiave)) gruppi.set(chiave, []);
+    gruppi.get(chiave).push(d);
+  }
+  if (!visti.size) throw new Error("Il file non contiene difetti.");
+  return [...gruppi.entries()].map(([chiave, lista]) => {
+    const [ispezione, opera] = chiave.split("|");
+    lista.sort((a, b) => naturale(a.parte, b.parte) || naturale(a.componente, b.componente) || naturale(a.id, b.id));
+    const difetti = lista.map(({ ispezione, opera, ...resto }) => resto);
+    const base = ispezione || nomeFile.replace(/\.[^.]+$/, "");
+    return { ispezione, opera, cartella: nomeCartella((ispezione ? ispezione + "_" : "") + (opera || base), 80), difetti };
+  });
+}
+async function importaElenco(file) {
+  try {
+    const buf = await file.arrayBuffer();
+    const isXlsx = /\.xlsx$/i.test(file.name) || new Uint8Array(buf, 0, 2).join() === "80,75";
+    const righe = isXlsx ? await righeXlsx(buf) : righeCsv(new TextDecoder().decode(buf));
+    const gruppi = difettiDaRighe(righe, file.name);
+    let ultima = null;
+    const pulisciId = (x) => x.replace(/[^A-Za-z0-9_.~:@+-]/g, "-").slice(0, 120);
+    for (const g of gruppi) {
+      let id = pulisciId(g.ispezione || g.cartella);
+      // stessa ispezione per due opere diverse (nello stesso file o già caricata): l'id include l'opera
+      const doppia = g.ispezione && gruppi.filter((x) => x.ispezione === g.ispezione).length > 1;
+      const giaAltra = S.isp.get(id) && S.isp.get(id).sync !== "del" && S.isp.get(id).opera && g.opera && S.isp.get(id).opera !== g.opera;
+      if (doppia || giaAltra) id = pulisciId(g.ispezione + "_" + nomeCartella(g.opera, 60));
+      const vecchia = S.isp.get(id);
+      const isp = Object.assign({ id, nuovi: [] }, vecchia || {}, g, { nuovi: (vecchia && vecchia.nuovi) || [], aggiornata: new Date().toISOString(), sync: "mod" });
+      S.isp.set(id, isp); await lPut("ispezioni", isp); ultima = id;
+    }
+    mostraToast(`<b>${gruppi.length === 1 ? "Ispezione caricata" : gruppi.length + " ispezioni caricate"}</b>${gruppi.reduce((n, g) => n + g.difetti.length, 0)} difetti`);
+    sincronizza();
+    if (gruppi.length === 1) apriIspezione(ultima); else disegna();
+  } catch (e) {
+    mostraToast(`<b>Non riesco a leggere il file</b>${esc(e.message === "non_zip" ? "Il file non è un .xlsx valido." : e.message)}`, null, 7000);
+  }
+}
+
+/* ---------------- foto dell'ultima ispezione: lettura del PDF «Allegato fotografico» di ARGO ----------------
+   Lettore PDF minimo, quanto basta per i PDF di ARGO (BIRT/iText e copie d'archivio): trova per ogni scheda
+   l'ID DIFETTO e la foto che gli sta sotto, e restituisce la foto (JPEG così com'è nel PDF). */
+const PDFX = (() => {
+  class N { constructor(v) { this.v = v; } }   // /Nome
+  class O { constructor(v) { this.v = v; } }   // operatore
+  class R { constructor(n) { this.n = n; } }   // riferimento n 0 R
+  class B { constructor(v) { this.v = v; } }   // stringa
+  const nm = (x) => (x instanceof N ? x.v : x);
+
+  async function inflate(u8) {
+    const ds = new DecompressionStream("deflate");
+    const w = ds.writable.getWriter();
+    w.write(u8).catch(() => {}); w.close().catch(() => {});
+    const r = ds.readable.getReader(); const parti = []; let n = 0;
+    try { for (;;) { const { value, done } = await r.read(); if (done) break; parti.push(value); n += value.length; } }
+    catch (e) { if (!n) throw e; }
+    const out = new Uint8Array(n); let o = 0; for (const p of parti) { out.set(p, o); o += p.length; }
+    return out;
+  }
+  async function deflate(u8) {
+    return new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new CompressionStream("deflate"))).arrayBuffer());
+  }
+  function bin(u8) {
+    let s = ""; const C = 0x8000;
+    for (let i = 0; i < u8.length; i += C) s += String.fromCharCode.apply(null, u8.subarray(i, i + C));
+    return s;
+  }
+  const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+  function crc(u8) { let c = 0xffffffff; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xff] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+  function png(w, h, colori, idat) {
+    const blocco = (tipo, dati) => {
+      const b = new Uint8Array(12 + dati.length), dv = new DataView(b.buffer);
+      dv.setUint32(0, dati.length); for (let i = 0; i < 4; i++) b[4 + i] = tipo.charCodeAt(i);
+      b.set(dati, 8); dv.setUint32(8 + dati.length, crc(b.subarray(4, 8 + dati.length))); return b;
+    };
+    const ihdr = new Uint8Array(13), dv = new DataView(ihdr.buffer);
+    dv.setUint32(0, w); dv.setUint32(4, h); ihdr[8] = 8; ihdr[9] = colori === 1 ? 0 : 2;
+    return [new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]), blocco("IHDR", ihdr), blocco("IDAT", idat), blocco("IEND", new Uint8Array(0))];
+  }
+
+  // ---- lettura dei valori PDF ----
+  const spazio = (c) => c === 32 || c === 10 || c === 13 || c === 9 || c === 12 || c === 0;
+  const delim = (c) => c === 40 || c === 41 || c === 60 || c === 62 || c === 91 || c === 93 || c === 123 || c === 125 || c === 47 || c === 37;
+  class Lex {
+    constructor(s, p = 0) { this.s = s; this.p = p; }
+    ws() {
+      const s = this.s, n = s.length;
+      while (this.p < n) {
+        const c = s.charCodeAt(this.p);
+        if (spazio(c)) this.p++;
+        else if (c === 37) { while (this.p < n && s[this.p] !== "\n" && s[this.p] !== "\r") this.p++; }
+        else break;
+      }
+    }
+    word() { const s = this.s, n = s.length, i = this.p; while (this.p < n) { const c = s.charCodeAt(this.p); if (spazio(c) || delim(c)) break; this.p++; } return s.slice(i, this.p); }
+    str() {
+      const s = this.s; let out = "", liv = 1; this.p++;
+      const esc = { n: "\n", r: "\r", t: "\t", b: "\b", f: "\f" };
+      while (this.p < s.length) {
+        const c = s[this.p++];
+        if (c === "\\") {
+          const c2 = s[this.p++];
+          if (esc[c2]) out += esc[c2];
+          else if (c2 >= "0" && c2 <= "7") { let v = c2.charCodeAt(0) - 48; for (let k = 0; k < 2 && s[this.p] >= "0" && s[this.p] <= "7"; k++) v = v * 8 + s.charCodeAt(this.p++) - 48; out += String.fromCharCode(v & 255); }
+          else if (c2 === "\r") { if (s[this.p] === "\n") this.p++; }
+          else if (c2 !== "\n") out += c2;
+        } else if (c === "(") { liv++; out += c; }
+        else if (c === ")") { if (--liv === 0) break; out += c; }
+        else out += c;
+      }
+      return out;
+    }
+  }
+  function rif(a) {
+    const out = [];
+    for (let i = 0; i < a.length; i++) {
+      if (i + 2 < a.length && Number.isInteger(a[i]) && Number.isInteger(a[i + 1]) && a[i + 2] instanceof O && a[i + 2].v === "R") { out.push(new R(a[i])); i += 2; }
+      else out.push(a[i]);
+    }
+    return out;
+  }
+  function val(L) {
+    L.ws(); const s = L.s; const c = s.charCodeAt(L.p);
+    if (L.p >= s.length) throw new Error("fine");
+    if (c === 47) { L.p++; return new N(L.word()); }
+    if (c === 40) return new B(L.str());
+    if (c === 60) {
+      if (s.charCodeAt(L.p + 1) === 60) { L.p += 2; return dict(L); }
+      L.p++; let e = s.indexOf(">", L.p); if (e < 0) e = s.length;
+      const h = s.slice(L.p, e).replace(/\s+/g, ""); L.p = e + 1;
+      let o = ""; for (let i = 0; i < h.length; i += 2) o += String.fromCharCode(parseInt((h.substr(i, 2) + "0").slice(0, 2), 16) || 0);
+      return new B(o);
+    }
+    if (c === 91) {
+      L.p++; const a = [];
+      for (;;) { L.ws(); if (L.p >= s.length || s.charCodeAt(L.p) === 93) { L.p++; return rif(a); } a.push(val(L)); }
+    }
+    if (c === 93 || c === 62 || c === 123 || c === 125 || c === 41) { L.p++; return new O(s[L.p - 1]); }
+    const w = L.word();
+    if (!w) { L.p++; return new O(s[L.p - 1]); }
+    if (/^[+-]?(\d+\.?\d*|\.\d+)$/.test(w)) return parseFloat(w);
+    if (w === "true") return true;
+    if (w === "false") return false;
+    if (w === "null") return null;
+    return new O(w);
+  }
+  function dict(L) {
+    const d = {}, s = L.s;
+    for (;;) {
+      L.ws();
+      if (L.p >= s.length) return d;
+      if (s.charCodeAt(L.p) === 62 && s.charCodeAt(L.p + 1) === 62) { L.p += 2; return d; }
+      const k = val(L);
+      let v = val(L);
+      if (Number.isInteger(v)) {
+        const salva = L.p;
+        try { const g = val(L), r = val(L); if (Number.isInteger(g) && r instanceof O && r.v === "R") v = new R(v); else L.p = salva; }
+        catch (e) { L.p = salva; }
+      }
+      if (k instanceof N) d[k.v] = v;
+    }
+  }
+
+  // ---- oggetti del file ----
+  function scansiona(s) {
+    const ogg = new Map(), sistemare = [], re = /(\d+)\s+(\d+)\s+obj\b/g;
+    let m;
+    while ((m = re.exec(s))) {
+      const num = +m[1], L = new Lex(s, re.lastIndex);
+      let v; try { v = val(L); } catch (e) { continue; }
+      L.ws(); let raw = null;
+      if (s.startsWith("stream", L.p)) {
+        let a = L.p + 6;
+        if (s[a] === "\r" && s[a + 1] === "\n") a += 2; else if (s[a] === "\n" || s[a] === "\r") a++;
+        const len = v && v.Length; let e = -1;
+        if (Number.isInteger(len) && /^\s*endstream/.test(s.substr(a + len, 30))) e = a + len;
+        if (e < 0) {
+          e = s.indexOf("endstream", a); if (e < 0) e = s.length;
+          while (e > a && (s[e - 1] === "\n" || s[e - 1] === "\r")) e--;
+          if (len instanceof R) sistemare.push([num, a, len.n]);
+        }
+        raw = [a, e];
+        const k = s.indexOf("endstream", e); re.lastIndex = k < 0 ? s.length : k + 9;
+      } else re.lastIndex = Math.max(L.p, re.lastIndex);
+      ogg.set(num, { v, raw });
+    }
+    for (const [num, a, rn] of sistemare) { const l = ogg.get(rn); if (l && Number.isInteger(l.v)) ogg.get(num).raw = [a, a + l.v]; }
+    return ogg;
+  }
+  function crea(u8) {
+    const P = { u8, ogg: scansiona(bin(u8)) };
+    P.r = (v) => { let k = 0; while (v instanceof R && k++ < 50) { const o = P.ogg.get(v.n); v = o ? o.v : null; } return v; };
+    P.flusso = async (ref) => {
+      const o = ref instanceof R ? P.ogg.get(ref.n) : null;
+      if (!o || !o.raw) return new Uint8Array(0);
+      let d = u8.subarray(o.raw[0], o.raw[1]);
+      let f = P.r(o.v && o.v.Filter); if (!Array.isArray(f)) f = f ? [f] : [];
+      for (const x of f) { if (nm(P.r(x)) === "FlateDecode") d = await inflate(d); else throw new Error("filtro " + nm(x)); }
+      return d;
+    };
+    return P;
+  }
+  function pagine(P) {
+    let cat = null;
+    for (const o of P.ogg.values()) if (o.v && o.v.constructor === Object && nm(o.v.Type) === "Catalog") cat = o.v;
+    if (!cat) throw new Error("PDF senza catalogo");
+    const out = [];
+    const visita = (nodo, ris, prof) => {
+      nodo = P.r(nodo); if (!nodo || prof > 30) return;
+      const r = P.r(nodo.Resources) || ris;
+      if (nodo.Kids) for (const k of P.r(nodo.Kids) || []) visita(k, r, prof + 1);
+      else out.push([nodo, r]);
+    };
+    visita(cat.Pages, {}, 0);
+    return out;
+  }
+
+  // ---- contenuto delle pagine: testi e immagini con la posizione ----
+  const per = (a, b) => [a[0] * b[0] + a[1] * b[2], a[0] * b[1] + a[1] * b[3], a[2] * b[0] + a[3] * b[2], a[2] * b[1] + a[3] * b[3],
+    a[4] * b[0] + a[5] * b[2] + b[4], a[4] * b[1] + a[5] * b[3] + b[5]];
+  async function interpreta(P, txt, ris, ctm, T, I, prof) {
+    const L = new Lex(txt), pila = [];
+    let ops = [], tm = [1, 0, 0, 1, 0, 0], tlm = tm;
+    const xo = (ris && P.r(ris.XObject)) || {};
+    for (;;) {
+      let v; try { v = val(L); } catch (e) { break; }
+      if (!(v instanceof O)) { ops.push(v); continue; }
+      const op = v.v, n = ops.length;
+      if (op === "q") pila.push(ctm);
+      else if (op === "Q") { if (pila.length) ctm = pila.pop(); }
+      else if (op === "cm" && n >= 6) ctm = per(ops.slice(-6).map(Number), ctm);
+      else if (op === "BT") tm = tlm = [1, 0, 0, 1, 0, 0];
+      else if (op === "Tm" && n >= 6) tm = tlm = ops.slice(-6).map(Number);
+      else if ((op === "Td" || op === "TD") && n >= 2) { tlm = per([1, 0, 0, 1, +ops[n - 2], +ops[n - 1]], tlm); tm = tlm; }
+      else if ((op === "Tj" || op === "'" || op === '"') && ops[n - 1] instanceof B) { const m = per(tm, ctm); T.push([m[4], m[5], ops[n - 1].v.trim()]); }
+      else if (op === "TJ" && Array.isArray(ops[n - 1])) { const m = per(tm, ctm); T.push([m[4], m[5], ops[n - 1].filter((x) => x instanceof B).map((x) => x.v).join("").trim()]); }
+      else if (op === "ID") { const e = txt.indexOf("EI", L.p); L.p = e < 0 ? txt.length : e + 2; }
+      else if (op === "Do" && ops[n - 1] instanceof N) {
+        const ref = xo[ops[n - 1].v], d = P.r(ref);
+        if (d && d.constructor === Object) {
+          if (nm(d.Subtype) === "Image") I.push([ctm, ref]);
+          else if (nm(d.Subtype) === "Form" && prof < 5) {
+            const mat = (P.r(d.Matrix) || [1, 0, 0, 1, 0, 0]).map(Number);
+            let sotto = ""; try { sotto = bin(await P.flusso(ref)); } catch (e) {}
+            await interpreta(P, sotto, P.r(d.Resources) || ris, per(mat, ctm), T, I, prof + 1);
+          }
+        }
+      }
+      ops = [];
+    }
+  }
+  async function contenutoPagina(P, pg) {
+    const c = pg.Contents; let lista = P.r(c);
+    if (!Array.isArray(lista)) lista = [c];
+    const pezzi = [];
+    for (const x of lista) { try { pezzi.push(bin(await P.flusso(x))); } catch (e) {} }
+    return pezzi.join("\n");
+  }
+  async function immagine(P, ref) {
+    const o = ref instanceof R ? P.ogg.get(ref.n) : null; if (!o || !o.raw) return null;
+    const d = o.v;
+    let f = P.r(d.Filter); if (!Array.isArray(f)) f = f ? [f] : []; f = f.map((x) => nm(P.r(x)));
+    let raw = P.u8.subarray(o.raw[0], o.raw[1]);
+    if (f.length && f[f.length - 1] === "DCTDecode") {
+      for (const x of f.slice(0, -1)) { if (x !== "FlateDecode") return null; raw = await inflate(raw); }
+      return new Blob([raw.slice()], { type: "image/jpeg" });
+    }
+    let px; try { px = await P.flusso(ref); } catch (e) { return null; }
+    const w = +P.r(d.Width), h = +P.r(d.Height), ch = nm(P.r(d.ColorSpace)) === "DeviceGray" ? 1 : 3;
+    if ((+P.r(d.BitsPerComponent) || 8) !== 8 || !w || !h) return null;
+    let parm = P.r(d.DecodeParms); if (Array.isArray(parm)) parm = P.r(parm[0]);
+    const pred = parm && parm.Predictor ? +P.r(parm.Predictor) : 1, riga = w * ch;
+    let g;
+    if (pred >= 10) { if (px.length < (riga + 1) * h) return null; g = px.subarray(0, (riga + 1) * h); }
+    else if (pred === 1) { if (px.length < riga * h) return null; g = new Uint8Array((riga + 1) * h); for (let y = 0; y < h; y++) g.set(px.subarray(y * riga, (y + 1) * riga), y * (riga + 1) + 1); }
+    else return null;
+    return new Blob(png(w, h, ch, await deflate(g)), { type: "image/png" });
+  }
+
+  // ---- le schede del PDF: ID DIFETTO + foto ----
+  async function leggi(buf) {
+    const P = crea(new Uint8Array(buf));
+    const info = { odl: "", data: "", stone: "", opera: "", foto: [] }, visti = new Set();
+    for (const [pg, ris] of pagine(P)) {
+      const T = [], I = [];
+      const mbx = (P.r(pg.MediaBox) || [0, 0, 595, 842]).map(Number), mx = (mbx[0] + mbx[2]) / 2;
+      await interpreta(P, await contenutoPagina(P, pg), ris, [1, 0, 0, 1, 0, 0], T, I, 0);
+      if (!info.odl) {
+        for (const [, , t] of T) {
+          const m = /^OdL\s+(\d+)\s*-\s*(.+)$/.exec(t);
+          if (m) { info.odl = m[1]; info.data = m[2].trim(); }
+          else if (/^\d{2}\.\d{2}\.\d{4}\.[0-9A-Z]\.\d$/.test(t)) info.stone = t;
+        }
+        const alti = T.filter((t) => t[1] > mbx[3] - 60).sort((a, b) => b[1] - a[1] || b[0] - a[0]);
+        for (const [x, , t] of alti) if (x > mx && t && !/^[\d.A-Z]+$/.test(t) && !t.includes("TRONCO")) { info.opera = t.replace(/\s+/g, " "); break; }
+      }
+      const destra = (x, y, cond) => { let r = null; for (const [tx, ty, t] of T) if (Math.abs(ty - y) < 2.5 && tx > x + 1 && t && (!cond || cond(t)) && (!r || tx - x < r[0])) r = [tx - x, t]; return r ? r[1] : ""; };
+      const etich = T.filter((t) => t[2].toUpperCase() === "ID DIFETTO");
+      for (const [ctm, ref] of I) {
+        const lw = Math.abs(ctm[0]) + Math.abs(ctm[2]), lh = Math.abs(ctm[1]) + Math.abs(ctm[3]);
+        if (lw < 40 || lh < 40) continue;   // loghi e icone
+        const x0 = Math.min(ctm[4], ctm[4] + ctm[0]), alto = Math.max(ctm[5], ctm[5] + ctm[3]);
+        const col = x0 + lw / 2 < mx;
+        let et = null;
+        for (const [x, y] of etich) if (y > alto - 1 && (x < mx) === col && (!et || y < et[1])) et = [x, y];
+        if (!et) continue;
+        const dif = destra(et[0], et[1], (t) => /^\d+$/.test(t));
+        if (!dif || visti.has(dif)) continue;
+        let idFoto = "", isp = "", dataFoto = "";
+        for (const [x, y, t] of T) {
+          if (!(y > alto - 1 && y <= et[1] + 1 && (x < mx) === col)) continue;
+          const tu = t.toUpperCase();
+          if (tu === "ID FOTO") idFoto = destra(x, y);
+          else if (tu.startsWith("ISPEZIONE IMMAGINE DIFETTO")) { const m = /^(\d+)\s*-\s*(.+)$/.exec(destra(x, y)); if (m) { isp = m[1]; dataFoto = m[2].trim(); } }
+        }
+        const blob = await immagine(P, ref);
+        if (!blob) continue;
+        visti.add(dif);
+        info.foto.push({ difetto: dif, idFoto, ispezione: isp, dataFoto, blob });
+      }
+    }
+    return info;
+  }
+  return { leggi };
+})();
+
+function mettiPrec(r) {
+  if (!S.prec.has(r.isp)) S.prec.set(r.isp, { info: null, foto: new Map() });
+  const p = S.prec.get(r.isp);
+  if (r.difetto === "_info") p.info = r; else p.foto.set(r.difetto, r);
+}
+function togliPrecMemoria(ispId) {
+  const v = S.prec.get(ispId);
+  if (v) for (const r of v.foto.values()) { const u = S.precUrl.get(r.id); if (u) URL.revokeObjectURL(u); S.precUrl.delete(r.id); }
+  S.prec.delete(ispId);
+  return v;
+}
+// immagini online dell'ultima ispezione di un'ispezione (dal documento online e da quelle gia' caricate da qui)
+function assetPrec(i) {
+  const a = new Set(i && i.prec && i.prec.foto ? Object.values(i.prec.foto).map((v) => v[0]) : []);
+  for (const x of (i && i.precAsset) || []) a.add(x);
+  return [...a].filter(Boolean);
+}
+// le foto dell'ultima ispezione lette qui non sono ancora (tutte) online
+function precDaInviare(ispId) {
+  const p = S.prec.get(ispId), i = S.isp.get(ispId), info = p && p.info;
+  if (!i || i.sync === "del" || !info || !info.caricato) return false;
+  return !(info.online === info.caricato && i.prec && i.prec.caricato === info.caricato);
+}
+function quantePrec(isp) { const p = S.prec.get(isp.id); return p ? isp.difetti.filter((d) => p.foto.has(d.id)).length : 0; }
+function precDi(ispId, key) { const p = S.prec.get(ispId); return p && key ? p.foto.get(key) : p; }
+function urlPrec(r) {
+  if (!r.blob) return r.asset ? "/_blob/" + r.asset : "";   // arrivata da un altro dispositivo: si vede da online
+  if (!S.precUrl.has(r.id)) S.precUrl.set(r.id, URL.createObjectURL(r.blob));
+  return S.precUrl.get(r.id);
+}
+async function importaPdf(file, preferita) {
+  mostraToast(`<b>Leggo il PDF…</b>${esc(file.name)}`, null, 60000);
+  let info;
+  try { info = await PDFX.leggi(await file.arrayBuffer()); }
+  catch (e) { return mostraToast(`<b>Non riesco a leggere il PDF</b>${esc(file.name)}`, null, 7000); }
+  if (!info.foto.length) return mostraToast(`<b>Nel PDF non ci sono foto di difetti</b>Serve l'«Allegato fotografico» di ARGO (…_FotoIsp.pdf).`, null, 7000);
+  const ids = new Set(info.foto.map((f) => f.difetto));
+  let isp = null, punti = 0;
+  for (const i of S.isp.values()) {
+    if (i.sync === "del") continue;
+    const n = i.difetti.filter((d) => ids.has(d.id)).length;
+    if (n > punti || (n === punti && n && i.id === preferita)) { isp = i; punti = n; }
+  }
+  if (!isp) return mostraToast(`<b>Nessuna ispezione con questi difetti</b>Aggiungi prima il report di ARGO dell'opera, poi il PDF delle foto.`, null, 7000);
+  const vecchie = togliPrecMemoria(isp.id);
+  const togli = vecchie ? [...vecchie.foto.values()].map((r) => r.id).concat(vecchie.info ? [vecchie.info.id] : []) : [];
+  const nuovi = info.foto.map((f) => ({ id: isp.id + "|" + f.difetto, isp: isp.id, difetto: f.difetto, blob: f.blob, dataFoto: f.dataFoto, idFoto: f.idFoto, ispezione: f.ispezione }));
+  nuovi.push({ id: isp.id + "|_info", isp: isp.id, difetto: "_info", odl: info.odl, data: info.data, opera: info.opera, file: file.name, n: punti, caricato: new Date().toISOString() });
+  for (const r of nuovi) mettiPrec(r);
+  await lScrivi("prec", nuovi, togli.filter((k) => !nuovi.some((r) => r.id === k)));
+  mostraToast(`<b>Foto ultima ispezione caricate</b>${punti} difetti su ${isp.difetti.length}${info.odl ? ` · OdL ${esc(info.odl)} del ${esc(info.data)}` : ""}`, null, 5000);
+  if (S.aperta !== isp.id) apriIspezione(isp.id); else disegna();
+  programmaSync(300);   // le foto vanno online: cosi' si vedono anche sugli altri dispositivi
+}
+function chiaviPrec(isp) { const p = S.prec.get(isp.id); return p ? destinazioni(isp).filter((d) => p.foto.has(d.key)).map((d) => d.key) : []; }
+function apriPrec(key) { S.vistaPrec = key; disegnaPrec(); }
+function disegnaPrec() {
+  const el = $("#vistaPrec"), isp = S.isp.get(S.aperta), key = S.vistaPrec;
+  const r = isp && key && precDi(isp.id, key);
+  if (!r) { el.hidden = true; S.vistaPrec = null; return; }
+  const lista = chiaviPrec(isp), i = lista.indexOf(key), c = conteggi(isp.id).get(key) || 0;
+  el.innerHTML = `<div class="img"><img src="${esc(urlPrec(r))}" alt="Foto dell'ultima ispezione"></div><div class="pannello gutter"><div class="contenuto" style="display:grid;gap:10px">` +
+    `<div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><div class="etich">Ultima ispezione${r.dataFoto ? " · " + esc(r.dataFoto) : ""}</div><b>${esc(etichettaLunga(isp, key))}</b><div class="sp" style="margin:0">Oggi: ${c} foto${i >= 0 ? ` · ${i + 1} di ${lista.length}` : ""}</div></div><button class="btn picc" id="chiudiPrec">Chiudi</button></div>` +
+    `<div style="display:flex;gap:8px"><button class="btn picc" id="precPrima" aria-label="Difetto precedente" ${i > 0 ? "" : "disabled"}>&#8249;</button><button class="btn prim" style="flex:1" id="scattaPrec">Scatta per questo difetto</button><button class="btn picc" id="precDopo" aria-label="Difetto successivo" ${i >= 0 && i < lista.length - 1 ? "" : "disabled"}>&#8250;</button></div>` +
+    `</div></div>`;
+  el.hidden = false;
+}
+
+/* ---------------- EXIF (data di scatto delle foto dalla galleria) ---------------- */
+async function dataExif(blob) {
+  try {
+    const b = new Uint8Array(await blob.slice(0, 131072).arrayBuffer());
+    if (b[0] !== 0xff || b[1] !== 0xd8) return null;
+    let i = 2;
+    while (i + 4 <= b.length && b[i] === 0xff) {
+      const m = b[i + 1]; if (m === 0xda) break;
+      const len = (b[i + 2] << 8) | b[i + 3];
+      if (m === 0xe1 && String.fromCharCode(...b.slice(i + 4, i + 8)) === "Exif") {
+        const t = i + 10, le = b[t] === 0x49;
+        const u16 = (o) => le ? b[t + o] | (b[t + o + 1] << 8) : (b[t + o] << 8) | b[t + o + 1];
+        const u32 = (o) => le ? (b[t + o] | (b[t + o + 1] << 8) | (b[t + o + 2] << 16) | (b[t + o + 3] << 24)) >>> 0 : ((b[t + o] << 24) | (b[t + o + 1] << 16) | (b[t + o + 2] << 8) | b[t + o + 3]) >>> 0;
+        const cerca = (ifd, tag) => { const n = u16(ifd); for (let k = 0; k < n; k++) { const p = ifd + 2 + 12 * k; if (u16(p) === tag) return p; } return -1; };
+        const asc = (p) => { const n = u32(p + 4), o = n > 4 ? u32(p + 8) : p + 8; return String.fromCharCode(...b.slice(t + o, t + o + n)).replace(/\0.*$/, ""); };
+        const ifd0 = u32(4); let s = "";
+        const pe = cerca(ifd0, 0x8769);
+        if (pe >= 0) { const sub = u32(pe + 8); const pd = cerca(sub, 0x9003); if (pd >= 0) s = asc(pd); }
+        if (!s) { const pd = cerca(ifd0, 0x0132); if (pd >= 0) s = asc(pd); }
+        const m2 = /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d):(\d\d)/.exec(s);
+        return m2 ? new Date(+m2[1], +m2[2] - 1, +m2[3], +m2[4], +m2[5], +m2[6]) : null;
+      }
+      i += 2 + len;
+    }
+  } catch (e) {}
+  return null;
+}
+async function miniatura(blob) {
+  try {
+    const bmp = await createImageBitmap(blob);
+    const k = 360 / Math.max(bmp.width, bmp.height);
+    const w = Math.max(1, Math.round(bmp.width * k)), h = Math.max(1, Math.round(bmp.height * k));
+    const c = document.createElement("canvas"); c.width = w; c.height = h;
+    c.getContext("2d").drawImage(bmp, 0, 0, w, h); bmp.close && bmp.close();
+    return await new Promise((ok) => c.toBlob(ok, "image/jpeg", 0.72));
+  } catch (e) { return null; }
+}
+function urlMini(f) {
+  if (S.miniUrl.has(f.id)) return S.miniUrl.get(f.id);
+  let u = "";
+  if (f.thumb) u = URL.createObjectURL(f.thumb);
+  else if (f.blob) u = URL.createObjectURL(f.blob);
+  else if (f.asset) u = "/_blob/" + f.asset;
+  if (u) S.miniUrl.set(f.id, u);
+  return u;
+}
+function urlGrande(f) { return f.blob ? URL.createObjectURL(f.blob) : f.asset ? "/_blob/" + f.asset : ""; }
+function liberaMini(id) { const u = S.miniUrl.get(id); if (u && u.startsWith("blob:")) URL.revokeObjectURL(u); S.miniUrl.delete(id); }
+
+/* ---------------- scatto e salvataggio ---------------- */
+async function salvaFoto(file, daCamera) {
+  const isp = S.isp.get(S.aperta);
+  if (!isp || !S.sel.size) return null;
+  const ora = new Date();
+  const quando = daCamera ? ora : (await dataExif(file)) || new Date(file.lastModified || ora);
+  const est = (/\.([a-z0-9]{3,4})$/i.exec(file.name || "") || [, "jpg"])[1].toLowerCase();
+  const nome = daCamera ? `IMG_${timbro(quando)}_${Math.random().toString(36).slice(2, 5)}.${est === "jpeg" ? "jpg" : est}` : (file.name || `IMG_${timbro(quando)}.${est}`);
+  const f = {
+    id: nuovoId(), isp: isp.id, nome, scattata: quando.toISOString(), dest: [...S.sel],
+    blob: file, thumb: await miniatura(file), size: file.size, tipo: file.type || "image/jpeg",
+    asset: null, esportata: false, sync: "nuova", creata: ora.toISOString(), locale: true,
+  };
+  S.foto.set(f.id, f);
+  await lPut("foto", fotoPerLocale(f));
+  return f;
+}
+async function suScatto(input, daCamera) {
+  const files = [...(input.files || [])];
+  input.value = "";
+  if (!files.length) return;
+  const salvate = [];
+  for (const file of files) { const f = await salvaFoto(file, daCamera); if (f) salvate.push(f); }
+  if (!salvate.length) { mostraToast("<b>Foto non salvata</b>Nessun difetto spuntato: spunta prima uno o più difetti e poi scatta.", null, 5000); return; }
+  vibra();
+  // dopo lo scatto le spunte si tolgono da sole e non esce nessun messaggio: la foto compare accanto al difetto.
+  // Per un'altra foto si rispunta il difetto; una foto sbagliata si elimina aprendola.
+  S.sel.clear();
+  const n = salvate[0].dest.length;
+  if (!S.locale) mostraToast(`<b>Foto tenuta solo in memoria</b>Questo telefono non permette di salvarla: esportala prima di chiudere l'app.`, salvate[0], 5000);
+  else if (!daCamera) mostraToast(`<b>${salvate.length === 1 ? "Foto aggiunta" : salvate.length + " foto aggiunte"}</b>in ${n === 1 ? "1 difetto" : n + " difetti"}`, salvate[0], 2500);
+  disegna();
+  sincronizza();
+  if (daCamera && galleriaAttiva() && puoiSalvare()) copiaInGalleria(salvate.map((f) => f.id));
+}
+/* ---------------- copia nella galleria del telefono ----------------
+   Una pagina web non può scrivere nella galleria: salva una copia come file scaricato (cartella Download),
+   che la galleria mostra nell'album «Download». Su claude.ai ogni salvataggio chiede conferma. */
+function galleriaAttiva() { try { return localStorage.getItem("argo-galleria") === "1"; } catch (e) { return false; } }
+function puoiSalvare() { return !!S.cap.downloads || (S.autonoma && window.top === window); }
+const _codaGalleria = []; let _galleriaInCorso = false;
+function copiaInGalleria(ids) { for (const id of ids) if (!_codaGalleria.includes(id)) _codaGalleria.push(id); lavoraGalleria(); }
+async function lavoraGalleria() {
+  if (_galleriaInCorso) return;
+  _galleriaInCorso = true;
+  let tentativi = 0;
+  try {
+    while (_codaGalleria.length) {
+      const f = S.foto.get(_codaGalleria[0]);
+      if (!f || f.sync === "del" || f.galleria) { _codaGalleria.shift(); continue; }
+      const nome = String(f.nome || "foto.jpg").replace(/\.(jpeg|jfif)$/i, ".jpg");
+      try {
+        const blob = await blobDi(f);
+        if (S.cap.downloads) await S.cap.downloads.save({ filename: nome, data: blob });
+        else { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+        f.galleria = true; tentativi = 0;
+        if (f.locale) await lPut("foto", fotoPerLocale(f));
+        _codaGalleria.shift();
+      } catch (e) {
+        const c = e && e.code;
+        if (c === "rate_limited" && tentativi++ < 5) { await new Promise((ok) => setTimeout(ok, 4000)); continue; }
+        _codaGalleria.shift(); tentativi = 0;
+        if (c === "declined") mostraToast("<b>Copia nella galleria annullata</b>Puoi farla dopo aprendo la foto.", null, 3500);
+        else if (c === "rejected_extension") mostraToast("<b>Questo formato non si può copiare nella galleria</b>" + esc(nome), null, 4000);
+        else mostraToast("<b>Copia nella galleria non riuscita</b>" + esc((e && e.message) || ""), null, 4000);
+      }
+    }
+  } finally {
+    _galleriaInCorso = false;
+    if (S.vista) disegnaFotoGrande();
+    if (S.esp) disegnaEsporta();
+  }
+}
+
+async function eliminaFoto(id, silenzioso) {
+  const f = S.foto.get(id); if (!f) return;
+  if (!f.asset && !f.drive && f.sync === "nuova") { S.foto.delete(id); await lDel("foto", id); liberaMini(id); }
+  else {
+    f.sync = "del"; f.dest = [];
+    await lPut("foto", fotoPerLocale(f));
+    sincronizza();
+  }
+  if (!silenzioso) disegna();
+}
+async function cambiaDest(id, dest) {
+  const f = S.foto.get(id); if (!f) return;
+  f.dest = dest;
+  if (f.locale) { if (f.sync === "ok") f.sync = "mod"; await lPut("foto", fotoPerLocale(f)); sincronizza(); }
+  else if (S.cap.db) { try { await S.cap.db.doc(S.base + "foto/" + id).update({ dest }); } catch (e) { mostraToast("<b>Modifica non salvata</b>Serve la connessione per modificare questa foto."); } }
+}
+
+/* ---------------- calcoli ---------------- */
+function fotoDi(ispId) { return [...S.foto.values()].filter((f) => f.isp === ispId && f.sync !== "del"); }
+// ultima foto scattata per ogni difetto (per la miniatura a fianco del difetto)
+function ultimeFoto(ispId) {
+  const ult = new Map();
+  for (const f of fotoDi(ispId)) for (const k of f.dest) { const u = ult.get(k); if (!u || String(f.scattata) > String(u.scattata)) ult.set(k, f); }
+  return ult;
+}
+function conteggi(ispId) {
+  const per = new Map();
+  for (const f of fotoDi(ispId)) for (const k of f.dest) per.set(k, (per.get(k) || 0) + 1);
+  return per;
+}
+function destinazioni(isp) {
+  const out = isp.difetti.map((d) => ({ ...d, key: d.id, genere: "difetto" }));
+  out.push({ key: CHIAVE_GENERALI, genere: "generali", parte: "ALTRO", componente: "", descrizione: "Foto generali dell'opera", id: "" });
+  for (const n of isp.nuovi || []) out.push({ key: PREF_NUOVO + n, genere: "nuovo", parte: "ALTRO", componente: "NUOVI DIFETTI", descrizione: n, id: "" });
+  return out;
+}
+function etichetta(isp, key) {
+  if (key === CHIAVE_GENERALI) return "Foto generali";
+  if (key.startsWith(PREF_NUOVO)) return "Nuovo: " + key.slice(PREF_NUOVO.length);
+  const d = isp.difetti.find((x) => x.id === key);
+  return d ? `${d.componente} · ${d.id}` : key;
+}
+function etichettaLunga(isp, key) {
+  if (key === CHIAVE_GENERALI) return "Foto generali dell'opera";
+  if (key.startsWith(PREF_NUOVO)) return "Nuovo difetto: " + key.slice(PREF_NUOVO.length);
+  const d = isp.difetti.find((x) => x.id === key);
+  return d ? `${d.parte} › ${d.componente} › ${d.id} ${d.descrizione}` : key;
+}
+
+/* ---------------- disegno ---------------- */
+function disegna() { disegnaTesta(); disegnaVista(); disegnaBarra(); if (S.gest && !$("#foglio").hidden) disegnaGestione(); if (S.statoAperto && !$("#foglio").hidden) disegnaStato(); }
+
+function statoSync() {
+  if (S.cloud === "attesa") return { cl: "", t: "Avvio…" };
+  if (S.cloud === "assente" && !S.drive) return { cl: "", t: "Solo sul telefono" };
+  const n = daCaricare(), dove = S.drive ? "su Drive" : "online";
+  if (S.sync.errore === "pieno") return { cl: "errore", t: "Spazio online pieno" };
+  if (navigator.onLine === false) return { cl: "attesa", t: n ? `Offline · ${n} in attesa` : "Offline" };
+  if (S.sync.inCorso && n) return { cl: "attesa lavora", t: `Salvo ${dove} · ${n}` };
+  if (S.sync.errore && n) return { cl: "errore", t: `${n} da salvare ${dove}` };
+  if (n) return { cl: "attesa", t: `${n} da salvare ${dove}` };
+  const rif = fotoRifiutate().length;
+  return rif ? { cl: "errore", t: `${rif} foto solo sul telefono` } : { cl: "ok", t: S.drive ? "Salvate su Drive" : "Salvate online" };
+}
+function disegnaTesta() {
+  const isp = S.isp.get(S.aperta);
+  const st = statoSync();
+  $("#testa").innerHTML =
+    (isp ? `<button class="indietro" id="btnIndietro" aria-label="Torna alle ispezioni">&#8249;</button>` : "") +
+    `<div class="testa-tit"><div class="app">${isp ? esc(isp.opera || isp.cartella) : S.autonoma ? "Foto Cavalcavia" : "Foto ARGO"}</div>` +
+    `<div class="sub">${isp ? "Ispezione " + esc(isp.ispezione || "-") : "Foto dei difetti in campo"}</div></div>` +
+    `<button class="pill ${st.cl}" id="btnStato"><span class="pt"></span>${esc(st.t)}</button>`;
+}
+
+function disegnaVista() {
+  const v = $("#vista");
+  const main = $("#main");
+  if (!S.aperta || !S.isp.get(S.aperta)) { S.aperta = null; main.classList.add("home"); v.innerHTML = htmlHome(); return; }
+  main.classList.remove("home");
+  const alto = window.scrollY;
+  conservaCampi(v, () => { v.innerHTML = htmlIspezione(S.isp.get(S.aperta)); });
+  if (document.activeElement && document.activeElement.id !== "cerca") window.scrollTo(0, alto);
+}
+/* Le pagine si ridisegnano quando arrivano aggiornamenti online: chi sta scrivendo (ricerca, nome del nuovo
+   difetto) non deve perdere il testo ne' la tastiera. */
+function conservaCampi(contenitore, ridisegna) {
+  const att = document.activeElement;
+  const idAtt = att && att.id && contenitore.contains(att) ? att.id : null;
+  const sel = idAtt && typeof att.selectionStart === "number" ? [att.selectionStart, att.selectionEnd] : null;
+  const nn = document.getElementById("nuovoNome"), testo = nn && contenitore.contains(nn) ? nn.value : "";
+  ridisegna();
+  const nn2 = document.getElementById("nuovoNome");
+  if (nn2 && testo) nn2.value = testo;
+  if (idAtt) {
+    const e = document.getElementById(idAtt);
+    if (e && document.activeElement !== e) { try { e.focus({ preventScroll: true }); if (sel && e.setSelectionRange) e.setSelectionRange(sel[0], sel[1]); } catch (x) {} }
+  }
+}
+
+function htmlAvvisi() {
+  let h = "";
+  if (!S.locale) h += `<div class="avviso bad"><b>Questo browser non salva le foto sul telefono.</b> Tieni attiva la connessione: le foto vengono salvate solo online. Apri l'app in Chrome, non in una finestra di navigazione in incognito.</div>`;
+  if (S.senzaSpazio) h += `<div class="avviso warn"><b>Salvataggio online non disponibile per il tuo account.</b> Le foto restano solo su questo telefono: esportale per il PC prima di eliminarle. Chiedi a chi ti ha condiviso l'app di invitarti con la tua email e accesso «Può modificare».</div>`;
+  else if (S.cloud === "assente" && !S.autonoma) h += `<div class="avviso warn"><b>Salvataggio online non disponibile.</b> Le foto restano solo sul telefono. Apri l'app dal link di claude.ai, con il tuo account, per salvarle anche online e poterle esportare dal PC.</div>`;
+  if (S.autonoma && !S.drive) h += `<div class="avviso info"><b>Collega Google Drive</b> per mandare ogni foto direttamente nella cartella del Drive. Apri il link che ti ha mandato chi gestisce il Drive, oppure incollalo qui.<form id="formDrive" class="form-drive"><input id="linkDrive" type="url" inputmode="url" autocomplete="off" placeholder="Link del Drive" aria-label="Link del Drive"><button class="btn picc prim" type="submit">Collega</button></form></div>`;
+  if (S.drive && ["drive_risposta", "drive_http_404", "drive_http_401", "drive_http_403"].includes(S.sync.errore)) h += `<div class="avviso bad"><b>Le foto non arrivano al Drive.</b> ${esc(spiegaErroreDrive(S.sync.errore))} Le foto restano al sicuro su questo telefono.</div>`;
+  if (S.sync.errore === "pieno") h += `<div class="avviso bad"><b>Lo spazio online è pieno.</b> Le nuove foto restano sul telefono. Esporta le ispezioni finite e usa «Elimina foto esportate» per fare spazio.</div>`;
+  return h;
+}
+
+function htmlHome() {
+  const isp = [...S.isp.values()].filter((i) => i.sync !== "del").sort((a, b) => String(b.aggiornata || "").localeCompare(String(a.aggiornata || "")));
+  let h = htmlAvvisi() + `<div class="sez-riga"><h2 class="sez">Ispezioni</h2>${isp.length ? `<button class="link" id="btnGestisci">Gestisci ed elimina</button>` : ""}</div>`;
+  if (!isp.length) h += `<div class="vuoto-home"><b>Nessuna ispezione ancora.</b><br>Aggiungi l'elenco dei difetti dell'ispezione che stai per fare: il report «Riepilogo difetti Livello 1» scaricato da ARGO, oppure il file <b>_elenco_difetti.csv</b> creato sul PC.</div>`;
+  else {
+    h += `<div class="lista-isp">`;
+    for (const i of isp) {
+      const c = conteggi(i.id), foto = fotoDi(i.id);
+      const con = i.difetti.filter((d) => c.get(d.id)).length, tot = i.difetti.length;
+      const nonEsp = foto.filter((f) => !alSicuro(f)).length;
+      h += `<button class="card-isp" data-apri="${esc(i.id)}"><div class="nome">${esc(i.opera || i.cartella)}</div>` +
+        `<div class="meta">Ispezione ${esc(i.ispezione || "-")} · ${tot} difetti · ${foto.length} foto${nonEsp ? ` · <b>${nonEsp} ${S.drive ? "da salvare su Drive" : "da esportare"}</b>` : ""}</div>` +
+        `<div class="barra-prog"><i style="width:${tot ? Math.round((con / tot) * 100) : 0}%"></i></div>` +
+        `<div class="riga-prog"><span>Difetti con foto</span><span><b>${con}</b> / ${tot}</span></div></button>`;
+    }
+    h += `</div>`;
+  }
+  h += `<div style="margin-top:12px"><button class="btn prim blocco" id="btnAggiungi">Aggiungi ispezione</button></div>`;
+  h += htmlSenzaScheda();
+  if (puoiSalvare()) h += `<div class="opz" style="margin-top:12px"><label><input type="checkbox" id="optGalleria" ${galleriaAttiva() ? "checked" : ""}><span><b>Copia le foto scattate anche nella galleria</b><br>Dopo ogni scatto il telefono chiede di salvarne una copia: la trovi nella galleria, album «Download».</span></label></div>`;
+  h += `<h2 class="sez">Come funziona</h2><ol class="passi">` +
+    `<li><span><b>Prima di partire</b>, aggiungi l'ispezione scegliendo il report di ARGO o il file <b>_elenco_difetti.csv</b> (anche da Drive o OneDrive). Se scegli insieme anche il PDF <b>FOTO ultima ispezione</b>, accanto a ogni difetto vedi la foto precedente, finché non ne scatti una nuova. Basta caricarlo una volta, anche dal PC: arriva da solo sugli altri dispositivi.</span></li>` +
+    `<li><span><b>In campo</b> tocca uno o più difetti e premi <b>Scatta</b>. La foto viene salvata già assegnata, compare accanto al difetto e le spunte si tolgono da sole. Per un'altra foto rispunta il difetto e scatta di nuovo; una foto sbagliata si elimina aprendola.</span></li>` +
+    (S.autonoma && S.drive
+      ? `<li><span><b>A fine giornata</b> non c'è niente da esportare: ogni foto va da sola nella cartella «${esc(S.drive.cartella || "Drive")}» appena c'è campo. In alto vedi quante mancano. «Esporta per il PC» resta come riserva.</span></li>` +
+        `<li><span><b>Sul PC</b> lancia <b>2_IMPORTA_DAL_TELEFONO</b> e scegli la cartella del Drive: le foto finiscono in <b>FOTO_PER_ARGO</b>, con il nome del difetto.</span></li></ol>`
+      : S.autonoma
+      ? `<li><span><b>A fine giornata</b> premi <b>Esporta per il PC</b> e carica il pacchetto su Drive o OneDrive. Le foto stanno solo su questo telefono: esportale prima di eliminarle.</span></li>`
+      : `<li><span><b>A fine giornata</b> premi <b>Esporta per il PC</b> e carica il pacchetto su Drive o OneDrive. In alternativa apri questa stessa app dal browser del PC ed esporta da lì.</span></li>`) +
+    (S.autonoma && S.drive ? "" : `<li><span><b>Sul PC</b> trascina il pacchetto su <b>2_IMPORTA_DAL_TELEFONO</b>: le foto finiscono in <b>FOTO_PER_ARGO</b>, con il nome del difetto.</span></li></ol>`);
+  h += `<div class="piede" id="piede"></div>`;
+  setTimeout(aggiornaPiede, 0);
+  return h;
+}
+async function aggiornaPiede() {
+  const el = $("#piede"); if (!el) return;
+  const righe = [`Versione app: ${VERSIONE}`];
+  try { if (navigator.storage && navigator.storage.estimate) { const e = await navigator.storage.estimate(); righe.push(`Spazio usato sul telefono: ${mb(e.usage || 0)}`); } } catch (e) {}
+  if (S.cap.assets) { try { const l = await S.cap.assets.list(); const u = l.usage; righe.push(`Spazio online: ${mb(u.bytes)} di ${mb(u.maxBytes)} · ${u.files} di ${u.maxFiles} foto`); } catch (e) {} }
+  if (el.isConnected) el.innerHTML = righe.map(esc).join("<br>");
+}
+
+function htmlIspezione(isp) {
+  const c = conteggi(isp.id), foto = fotoDi(isp.id);
+  const tot = isp.difetti.length, con = isp.difetti.filter((d) => c.get(d.id)).length;
+  const nonEsp = foto.filter((f) => !f.esportata).length;
+  let h = htmlAvvisi();
+  h += `<div class="riepilogo"><div class="r1"><div class="riga-prog"><span>Difetti con foto <b>${con}</b> / ${tot}</span><span><b>${foto.length}</b> foto</span></div></div>` +
+    `<div class="barra-prog"><i style="width:${tot ? Math.round((con / tot) * 100) : 0}%"></i></div>` +
+    `<button class="btn blocco picc" id="btnEsporta" ${foto.length ? "" : "disabled"}>Esporta per il PC${nonEsp ? ` · ${nonEsp} nuove` : ""}</button>` + htmlPrecRiga(isp) + `</div>`;
+  h += `<div class="strumenti"><input type="search" id="cerca" placeholder="Cerca: trave-3, staffe, ID…" value="${esc(S.cerca)}" autocomplete="off" enterkeyhint="search">` +
+    `<button class="chip" id="btnSenza" aria-pressed="${S.soloSenza}">Senza foto</button></div>`;
+
+  return h + `<div id="elenco">${htmlElenco(isp)}</div>`;
+}
+
+function htmlPrecRiga(isp) {
+  const p = precDi(isp.id);
+  if (!p || !p.info) return `<button class="btn blocco picc" id="btnPrec">Aggiungi foto ultima ispezione (PDF)</button>`;
+  const i = p.info;
+  return `<div class="prec-riga"><span class="t">Foto ultima ispezione: <b>${quantePrec(isp)}</b> di ${isp.difetti.length} difetti${i.odl ? ` · OdL ${esc(i.odl)}` : ""}${i.data ? ` del ${esc(i.data)}` : ""}</span><button class="btn picc" id="btnPrec">Cambia PDF</button></div>`;
+}
+
+function htmlElenco(isp) {
+  const c = conteggi(isp.id), ult = ultimeFoto(isp.id);
+  let h = "";
+  const parole = S.cerca.toLowerCase().split(/\s+/).filter(Boolean);
+  const gruppi = new Map();
+  for (const d of destinazioni(isp)) {
+    const txt = `${d.parte} ${d.componente} ${d.id} ${d.descrizione} ${d.note || ""}`.toLowerCase();
+    if (parole.some((w) => !txt.includes(w))) continue;
+    if (S.soloSenza && d.genere === "difetto" && c.get(d.key)) continue;
+    if (!gruppi.has(d.parte)) gruppi.set(d.parte, new Map());
+    const g = gruppi.get(d.parte); if (!g.has(d.componente)) g.set(d.componente, []);
+    g.get(d.componente).push(d);
+  }
+  if (!gruppi.size) h += `<div class="niente">${parole.length ? "Nessun difetto corrisponde alla ricerca." : "Tutti i difetti hanno almeno una foto."}</div>`;
+  for (const [parte, comps] of gruppi) {
+    const tutti = destinazioni(isp).filter((d) => d.parte === parte && d.genere === "difetto");
+    const chiuso = S.chiusi.has(parte) && !parole.length;
+    const cnt = parte === "ALTRO" ? "" : `${tutti.filter((d) => c.get(d.key)).length}/${tutti.length}`;
+    h += `<section class="gruppo${chiuso ? " chiuso" : ""}"><button class="g-testa" data-parte="${esc(parte)}" aria-expanded="${!chiuso}"><span class="fr">${chiuso ? "&#9656;" : "&#9662;"}</span><span class="gn">${esc(parte)}</span><span class="gc">${cnt}</span></button>`;
+    if (!chiuso) {
+      for (const [comp, lista] of comps) {
+        if (comp) {
+          const tuttiSel = lista.every((d) => S.sel.has(d.key));
+          h += `<div class="comp"><span class="cn">${esc(comp)}</span>${lista.length > 1 ? `<button class="tutti" data-comp="${esc(lista.map((d) => d.key).join("\n"))}">${tuttiSel ? "Togli tutti" : "Spunta tutti"}</button>` : ""}</div>`;
+        }
+        for (const d of lista) {
+          const n = c.get(d.key) || 0, on = S.sel.has(d.key), pr = d.genere === "difetto" && precDi(isp.id, d.key), mia = ult.get(d.key);
+          // a fianco del difetto: l'ultima foto scattata; se non ce ne sono, quella dell'ultima ispezione
+          const pv = mia ? `<span class="pv mia" data-foto="${esc(mia.id)}" title="Ultima foto scattata"><img src="${esc(urlMini(mia))}" alt="" loading="lazy" decoding="async"></span>`
+            : pr ? `<span class="pv" data-prec="${esc(d.key)}" title="Foto dell'ultima ispezione"><img src="${esc(urlPrec(pr))}" alt="" loading="lazy" decoding="async"></span>` : "";
+          h += `<button class="dif" data-key="${esc(d.key)}" aria-pressed="${on}"><span class="ck">&#10003;</span>` +
+            `<span class="tx">${d.genere === "difetto" ? `<span class="id">${esc(d.id)}</span>` : ""}<span class="ds">${esc(d.descrizione)}</span>${d.note ? `<span class="nt">${esc(d.note)}</span>` : ""}</span>` +
+            `<span class="pvc">${pv}</span>` +
+            `<span class="dx">${d.g ? `<span class="g g${esc(d.g)}">G${esc(d.g)}</span>` : ""}<span class="nf${n ? " si" : ""}" data-dettaglio="${esc(d.key)}">${n} foto</span></span></button>`;
+        }
+      }
+      if (parte === "ALTRO") h += `<form class="nuovo-form" id="formNuovo"><input id="nuovoNome" placeholder="Nuovo difetto trovato in campo" autocomplete="off" enterkeyhint="done"><button class="btn picc" type="submit">Crea</button></form>`;
+    }
+    h += `</section>`;
+  }
+  return h;
+}
+
+function disegnaBarra() {
+  const b = $("#barra");
+  const isp = S.isp.get(S.aperta);
+  if (!isp) { b.hidden = true; return; }
+  b.hidden = false;
+  const n = S.sel.size;
+  const nomi = [...S.sel].map((k) => etichetta(isp, k));
+  b.innerHTML = `<div class="info">${n ? `<span class="t"><b>${n === 1 ? "1 difetto" : n + " difetti"}</b>: ${esc(nomi.join(" · "))}</span><button class="x" id="btnDesel">Deseleziona</button>` : `<span class="t">Tocca uno o più difetti, poi scatta</span>`}</div>` +
+    `<div class="az"><button class="galleria" id="btnGalleria" ${n ? "" : "disabled"}>Dalla galleria</button>` +
+    `<button class="scatta" id="btnScatta" ${n ? "" : "disabled"}><svg class="ico-cam" viewBox="0 0 26 22" aria-hidden="true"><path fill="currentColor" d="M9 1h8l2 3h4a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4z"/><circle cx="13" cy="12" r="5" fill="var(--hivis)"/><circle cx="13" cy="12" r="3" fill="currentColor"/></svg>Scatta</button></div>`;
+}
+
+/* ---------------- avvisi ---------------- */
+let _timerToast = null;
+function mostraToast(html, foto, ms = 3500) {
+  const t = $("#toast");
+  t.innerHTML = (foto ? `<img src="${esc(urlMini(foto))}" alt="">` : "") + `<div class="t">${html}</div>`;
+  t.hidden = false;
+  clearTimeout(_timerToast); _timerToast = setTimeout(nascondiToast, ms);
+}
+function nascondiToast() { $("#toast").hidden = true; }
+
+/* ---------------- dettaglio di un difetto ---------------- */
+function apriDettaglio(key) {
+  const isp = S.isp.get(S.aperta); if (!isp) return;
+  S.dettaglio = key;
+  disegnaDettaglio();
+}
+function disegnaDettaglio() {
+  const isp = S.isp.get(S.aperta), key = S.dettaglio, el = $("#foglio");
+  if (!isp || !key) { el.hidden = true; return; }
+  const d = destinazioni(isp).find((x) => x.key === key);
+  const foto = fotoDi(isp.id).filter((f) => f.dest.includes(key)).sort((a, b) => String(a.scattata).localeCompare(String(b.scattata)));
+  let h = `<div class="f-testa"><div class="testa-in gutter contenuto"><button class="indietro" id="chiudiFoglio" aria-label="Chiudi">&#8249;</button><div class="testa-tit"><div class="app">${esc(d ? d.descrizione : key)}</div><div class="sub">${d && d.genere === "difetto" ? esc(d.parte + " · " + d.componente + " · " + d.id) : "&nbsp;"}</div></div></div></div><div class="f-corpo gutter"><div class="contenuto">`;
+  if (d && d.genere === "difetto") {
+    h += `<div class="scheda"><span class="k">TIPO</span><span class="v">${esc(d.tipo ? d.tipo + " · " : "")}${esc(d.descrizione)}</span>` +
+      `<span class="k">G / E / I</span><span class="v">${esc(d.g || "-")} / ${esc(d.e || "-")} / ${esc(d.i || "-")}</span>` +
+      (d.note ? `<span class="k">NOTE</span><span class="nota">${esc(d.note)}</span>` : "") + `</div>`;
+  }
+  const pr = precDi(isp.id, key);
+  if (pr) h += `<button class="prec-foto" data-prec="${esc(key)}"><img src="${esc(urlPrec(pr))}" alt="Foto dell'ultima ispezione"><span class="st">Ultima ispezione${pr.dataFoto ? " · " + esc(pr.dataFoto) : ""}</span></button>`;
+  h += `<div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn prim" style="flex:1" id="scattaQui">Scatta per questo difetto</button></div>`;
+  h += foto.length ? `<div class="griglia">${foto.map((f) => `<button class="miniatura" data-foto="${esc(f.id)}"><img src="${esc(urlMini(f))}" alt="" loading="lazy"><span class="st">${esc(oraBreve(f.scattata))}</span></button>`).join("")}</div>` : `<p class="sp">Ancora nessuna foto per questo difetto.</p>`;
+  h += `</div></div>`;
+  el.innerHTML = h; el.hidden = false;
+}
+
+/* ---------------- foto a schermo intero ---------------- */
+function apriFoto(id) { S.vista = { id, conferma: false }; disegnaFotoGrande(); }
+function disegnaFotoGrande() {
+  const el = $("#vistaFoto"), v = S.vista;
+  const f = v && S.foto.get(v.id);
+  if (!f || f.sync === "del") { el.hidden = true; if (el._url) { URL.revokeObjectURL(el._url); el._url = null; } return; }
+  const isp = S.isp.get(f.isp);
+  if (!el._url || el._id !== f.id) { if (el._url && el._url.startsWith("blob:")) URL.revokeObjectURL(el._url); el._url = urlGrande(f); el._id = f.id; }
+  let h = `<div class="img"><img src="${esc(el._url)}" alt="Foto ${esc(f.nome)}"></div><div class="pannello gutter"><div class="contenuto" style="display:grid;gap:10px">`;
+  h += `<div style="display:flex;align-items:center;gap:10px"><div style="flex:1;min-width:0"><b>${esc(f.nome)}</b><div class="sp" style="margin:0">Scattata ${esc(oraBreve(f.scattata))} · ${mb(f.size || 0)}${f.esportata ? " · esportata" : ""}${f.galleria ? " · nella galleria" : ""}</div></div><button class="btn picc" id="chiudiVista">Chiudi</button></div>`;
+  h += `<ul class="dest-lista">${f.dest.map((k) => `<li><span>${esc(isp ? etichettaLunga(isp, k) : k)}</span>${f.dest.length > 1 ? `<button class="btn picc" data-togli="${esc(k)}">Togli</button>` : ""}</li>`).join("")}</ul>`;
+  h += v.conferma
+    ? `<div class="conferma"><b>Eliminare questa foto?</b><span>Sparisce da tutti i difetti, dal telefono e dallo spazio online. Non si può annullare.</span><div class="bt"><button class="btn picc peric" id="eliminaSi">Elimina</button><button class="btn picc" id="eliminaNo">Annulla</button></div></div>`
+    : `<div style="display:flex;gap:8px;flex-wrap:wrap">${puoiSalvare() ? `<button class="btn picc" id="galleriaFoto" ${f.galleria || _codaGalleria.includes(f.id) ? "disabled" : ""}>${f.galleria ? "Già nella galleria" : "Copia nella galleria"}</button>` : ""}<button class="btn peric picc" id="eliminaFoto">Elimina foto</button></div>`;
+  h += `</div></div>`;
+  el.innerHTML = h; el.hidden = false;
+}
+
+/* ---------------- esportazione ---------------- */
+function apriEsporta() { S.esp = { quali: null, parti: null, lavoro: false, prog: 0, msg: "", conferma: null }; disegnaEsporta(); }
+function disegnaEsporta() {
+  const el = $("#foglio"), isp = S.isp.get(S.aperta), e = S.esp;
+  if (!isp || !e) { el.hidden = true; return; }
+  const foto = fotoDi(isp.id), nuove = foto.filter((f) => !f.esportata);
+  if (e.quali == null) e.quali = nuove.length ? "nuove" : "tutte";
+  const scelte = e.quali === "nuove" ? nuove : foto;
+  const peso = scelte.reduce((s, f) => s + (f.size || 0), 0);
+  let h = `<div class="f-testa"><div class="testa-in gutter contenuto"><button class="indietro" id="chiudiFoglio" aria-label="Chiudi">&#8249;</button><div class="testa-tit"><div class="app">Esporta per il PC</div><div class="sub">${esc(isp.opera || isp.cartella)}</div></div></div></div><div class="f-corpo gutter"><div class="contenuto">`;
+  if (!e.parti) {
+    h += `<p class="sp">Crea un pacchetto con le foto già assegnate ai difetti. Sul PC trascinalo su <b>2_IMPORTA_DAL_TELEFONO</b>: ogni foto finisce nella cartella del suo difetto.</p>`;
+    h += `<div class="opz"><label><input type="radio" name="quali" value="nuove" ${e.quali === "nuove" ? "checked" : ""} ${nuove.length ? "" : "disabled"}><span><b>Solo le foto nuove</b><br>${nuove.length} foto non ancora esportate</span></label>` +
+      `<label><input type="radio" name="quali" value="tutte" ${e.quali === "tutte" ? "checked" : ""}><span><b>Tutte le foto</b><br>${foto.length} foto. Il PC salta quelle già importate.</span></label></div>`;
+    h += `<p class="sp">${scelte.length} foto · ${mb(peso)}${peso > LIMITE_PARTE ? ` · diviso in ${Math.ceil(peso / LIMITE_PARTE)} o più parti` : ""}</p>`;
+    h += e.lavoro ? `<div class="progresso"><i style="width:${Math.round(e.prog * 100)}%"></i></div><p class="sp" style="margin-top:8px">${esc(e.msg)}</p>`
+      : `<button class="btn prim blocco" id="creaPacchetto" ${scelte.length ? "" : "disabled"}>Crea il pacchetto</button>`;
+    if (!S.cap.downloads && window.top !== window) h += `<div class="avviso warn" style="margin-top:12px">Il salvataggio dei file non è disponibile in questa vista. Apri l'app dal link di claude.ai.</div>`;
+    const fuoriGalleria = foto.filter((f) => !f.galleria);
+    if (puoiSalvare() && fuoriGalleria.length && !e.lavoro) h += `<p class="sp" style="margin-top:18px">${fuoriGalleria.length === 1 ? "1 foto non è" : fuoriGalleria.length + " foto non sono"} nella galleria del telefono.</p><button class="btn blocco picc" id="galleriaTutte" ${_galleriaInCorso ? "disabled" : ""}>${_galleriaInCorso ? "Copia in corso…" : "Copiale nella galleria (conferma per ogni foto)"}</button>`;
+  } else {
+    const tutte = e.parti.every((p) => p.fatta);
+    h += `<p class="sp">${e.parti.length === 1 ? "Il pacchetto è pronto." : `Il pacchetto è diviso in ${e.parti.length} parti: salvale tutte.`} Dopo il salvataggio caricalo su Drive o OneDrive.</p><div class="parti">`;
+    e.parti.forEach((p, k) => {
+      h += `<div class="parte${p.fatta ? " fatta" : ""}"><span class="t"><b>${esc(p.nome)}</b>${p.n} foto · ${mb(p.blob.size)}${p.fatta ? " · salvato" : ""}</span><button class="btn picc ${p.fatta ? "" : "prim"}" data-salva="${k}">${p.fatta ? "Salva di nuovo" : "Salva"}</button></div>`;
+    });
+    h += `</div>`;
+    if (e.msg) h += `<p class="sp" style="margin-top:10px">${esc(e.msg)}</p>`;
+    if (tutte) h += `<div class="avviso info" style="margin-top:12px"><b>Fatto.</b> Ora apri Drive o OneDrive, carica ${e.parti.length === 1 ? "il file" : "i file"} dalla cartella Download e, sul PC, trascinali su 2_IMPORTA_DAL_TELEFONO.</div>`;
+  }
+  const esportate = foto.filter((f) => (S.drive && S.autonoma ? alSicuro(f) : f.esportata));
+  if (S.drive && S.autonoma && esportate.length && !e.lavoro) {
+    h += `<h2 class="sez">Fare spazio sul telefono</h2>`;
+    h += e.conferma === "elimina"
+      ? `<div class="conferma"><b>Togliere dal telefono ${esportate.length} foto?</b><span>Sono già sul Drive (o esportate): spariscono solo da questo telefono.</span><div class="bt"><button class="btn picc peric" id="pulisciSi">Togli dal telefono</button><button class="btn picc" id="pulisciNo">Annulla</button></div></div>`
+      : `<p class="sp">${esportate.length} foto sono già sul Drive. Puoi toglierle da questo telefono per fare spazio: sul Drive restano.</p><button class="btn blocco" id="pulisci">Togli dal telefono le foto già sul Drive</button>`;
+  } else if (esportate.length && !e.lavoro) {
+    h += `<h2 class="sez">Fare spazio</h2>`;
+    if (e.conferma === "elimina") {
+      h += `<div class="conferma"><b>Eliminare ${esportate.length} foto esportate?</b><span>Spariscono dal telefono e dallo spazio online. Fallo solo dopo averle importate sul PC.</span><div class="bt"><button class="btn picc peric" id="pulisciSi">Elimina</button><button class="btn picc" id="pulisciNo">Annulla</button></div></div>`;
+    } else {
+      h += `<p class="sp">${esportate.length} foto sono già state esportate. Dopo averle importate sul PC puoi eliminarle da qui.</p><button class="btn peric blocco" id="pulisci">Elimina foto esportate</button>`;
+    }
+  }
+  h += `</div></div>`;
+  el.innerHTML = h; el.hidden = false;
+}
+
+const CRC_T = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8, c = 0xffffffff) { for (let i = 0; i < u8.length; i++) c = CRC_T[(c ^ u8[i]) & 0xff] ^ (c >>> 8); return c; }
+function dosData(d) { return { t: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1), d: ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate() }; }
+async function zipBlob(voci) {
+  // voci: [{nome, blob, data}] -> Blob ZIP senza compressione (le foto JPEG sono gia' compresse)
+  const enc = new TextEncoder(), parti = [], centrale = [];
+  let off = 0;
+  for (const v of voci) {
+    const nome = enc.encode(v.nome), buf = new Uint8Array(await v.blob.arrayBuffer());
+    const crc = (crc32(buf) ^ 0xffffffff) >>> 0, sz = buf.length, dd = dosData(v.data || new Date());
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dd.t, true); lh.setUint16(12, dd.d, true); lh.setUint32(14, crc, true); lh.setUint32(18, sz, true); lh.setUint32(22, sz, true);
+    lh.setUint16(26, nome.length, true); lh.setUint16(28, 0, true);
+    parti.push(lh.buffer, nome, v.blob);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dd.t, true); ch.setUint16(14, dd.d, true); ch.setUint32(16, crc, true); ch.setUint32(20, sz, true); ch.setUint32(24, sz, true);
+    ch.setUint16(28, nome.length, true); ch.setUint32(42, off, true);
+    centrale.push(ch.buffer, nome);
+    off += 30 + nome.length + sz;
+    if (v.onFatto) v.onFatto();
+  }
+  const dimC = centrale.reduce((s, x) => s + x.byteLength, 0);
+  const fine = new DataView(new ArrayBuffer(22));
+  fine.setUint32(0, 0x06054b50, true); fine.setUint16(8, voci.length, true); fine.setUint16(10, voci.length, true);
+  fine.setUint32(12, dimC, true); fine.setUint32(16, off, true);
+  return new Blob([...parti, ...centrale, fine.buffer], { type: "application/zip" });
+}
+// nel pacchetto per il PC l'estensione dice il formato vero (una HEIC salvata come .jpg diventa .heic: il PC la riconosce)
+const EST_FORMATO = { "image/jpeg": ["jpg", "jpeg"], "image/png": ["png"], "image/webp": ["webp"], "image/gif": ["gif"], "image/heic": ["heic", "heif"], "image/avif": ["avif"], "image/tiff": ["tif", "tiff"], "image/bmp": ["bmp"] };
+function nomeConFormato(nome, formato) {
+  const est = EST_FORMATO[formato]; if (!est) return nome;
+  const m = /\.([a-z0-9]{1,5})$/i.exec(nome);
+  if (m && est.includes(m[1].toLowerCase())) return nome;
+  return (m ? nome.slice(0, -m[0].length) : nome) + "." + est[0];
+}
+async function blobDi(f) {
+  if (f.blob) return f.blob;
+  if (f.asset) { const r = await fetch("/_blob/" + f.asset); if (!r.ok) throw new Error("La foto " + f.nome + " non è più disponibile online."); return await r.blob(); }
+  throw new Error("La foto " + f.nome + " non è disponibile.");
+}
+async function creaPacchetto() {
+  const isp = S.isp.get(S.aperta), e = S.esp; if (!isp || !e || e.lavoro) return;
+  const tutte = fotoDi(isp.id), scelte = (e.quali === "nuove" ? tutte.filter((f) => !f.esportata) : tutte).sort((a, b) => String(a.scattata).localeCompare(String(b.scattata)));
+  if (!scelte.length) return;
+  e.lavoro = true; e.prog = 0; e.msg = "Preparo le foto…"; disegnaEsporta();
+  try {
+    // gruppi da massimo LIMITE_PARTE
+    const gruppi = [[]]; let peso = 0;
+    for (const f of scelte) { if (peso + (f.size || 0) > LIMITE_PARTE && gruppi[gruppi.length - 1].length) { gruppi.push([]); peso = 0; } gruppi[gruppi.length - 1].push(f); peso += f.size || 0; }
+    const ora = new Date(), base = `ARGO_${isp.ispezione || isp.id}_${timbro(ora).slice(0, 13).replace("_", "-")}`;
+    const nomiUsati = new Map(); let fatte = 0;
+    const nomeUnico = (n) => { const k = n.toLowerCase(); const c = nomiUsati.get(k) || 0; nomiUsati.set(k, c + 1); return c ? n.replace(/(\.[^.]+)?$/, `_${c + 1}$1`) : n; };
+    e.parti = [];
+    for (let g = 0; g < gruppi.length; g++) {
+      const voci = [], elenco = [];
+      for (const f of gruppi[g]) {
+        const blob = await blobDi(f);
+        const nome = nomeUnico(nomeConFormato(f.nome || "foto.jpg", await formatoReale(blob)));
+        voci.push({ nome: "foto/" + nome, blob, data: new Date(f.scattata), onFatto: () => { fatte++; e.prog = fatte / scelte.length; e.msg = `Preparo il pacchetto: ${fatte} di ${scelte.length} foto…`; disegnaEsporta(); } });
+        elenco.push({ file: "foto/" + nome, nome, scattata: f.scattata, dest: f.dest, id: f.id });
+      }
+      const manifest = {
+        formato: "argo-foto-telefono", versione: 1, ispezione: isp.ispezione, opera: isp.opera, cartella: isp.cartella,
+        esportato: ora.toISOString(), parte: g + 1, parti: gruppi.length,
+        difetti: isp.difetti, nuovi: isp.nuovi || [], foto: elenco,
+      };
+      voci.unshift({ nome: "manifest.json", blob: new Blob([JSON.stringify(manifest, null, 1)], { type: "application/json" }), data: ora });
+      const blob = await zipBlob(voci);
+      const nome = gruppi.length === 1 ? `${base}.zip` : `${base}_parte${g + 1}di${gruppi.length}.zip`;
+      e.parti.push({ nome, blob, n: elenco.length, ids: elenco.map((x) => x.id), fatta: false });
+    }
+    e.msg = "";
+  } catch (err) {
+    e.parti = null; e.msg = "";
+    mostraToast(`<b>Pacchetto non creato</b>${esc(err.message || "Errore")}`, null, 7000);
+  }
+  e.lavoro = false; disegnaEsporta();
+}
+async function salvaParte(k) {
+  const e = S.esp, p = e && e.parti && e.parti[k]; if (!p) return;
+  const dl = S.cap.downloads;
+  try {
+    if (dl) { await dl.save({ filename: p.nome, data: p.blob }); }
+    else if (window.top === window) { const a = document.createElement("a"); a.href = URL.createObjectURL(p.blob); a.download = p.nome; document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000); }
+    else { e.msg = "Il salvataggio dei file non è disponibile in questa vista: apri l'app dal link di claude.ai."; disegnaEsporta(); return; }
+    p.fatta = true; e.msg = "";
+    for (const id of p.ids) { const f = S.foto.get(id); if (f && !f.esportata) { f.esportata = true; if (f.locale) { if (f.sync === "ok" && !S.drive) f.sync = "mod"; await lPut("foto", fotoPerLocale(f)); } else if (S.cap.db) { S.cap.db.doc(S.base + "foto/" + id).update({ esportata: true }).catch(() => {}); } } }
+    sincronizza();
+  } catch (err) {
+    const c = err && err.code;
+    e.msg = c === "declined" ? "Salvataggio annullato. Premi di nuovo Salva quando vuoi." : c === "too_large" ? "Il file è troppo grande per questa app: apri il link in Chrome e riprova." : c === "rate_limited" ? "Attendi un attimo e riprova." : "Salvataggio non riuscito. Riprova.";
+  }
+  disegnaEsporta(); disegna();
+}
+async function pulisciEsportate() {
+  const isp = S.isp.get(S.aperta); if (!isp) return;
+  if (S.drive && S.autonoma) {
+    let n = 0;
+    for (const f of fotoDi(isp.id).filter(alSicuro)) { S.foto.delete(f.id); await lDel("foto", f.id); liberaMini(f.id); n++; }
+    S.esp.conferma = null; disegnaEsporta(); disegna();
+    return mostraToast(`<b>${n === 1 ? "1 foto tolta" : n + " foto tolte"} dal telefono</b>Sul Drive restano tutte.`);
+  }
+  for (const f of fotoDi(isp.id).filter((x) => x.esportata)) await eliminaFoto(f.id, true);
+  S.esp.conferma = null; disegnaEsporta(); disegna();
+  mostraToast("<b>Foto eliminate</b>Lo spazio verrà liberato appena c'è connessione.");
+}
+
+/* ---------------- ispezioni caricate: elenco e cancellazione ---------------- */
+function apriGestione() { S.gest = { conferma: null }; disegnaGestione(); }
+function dataBreve(iso) { if (!iso) return ""; const d = new Date(iso); return isNaN(d) ? "" : `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`; }
+function disegnaGestione() {
+  const el = $("#foglio"), g = S.gest;
+  if (!g) return;
+  const lista = [...S.isp.values()].filter((i) => i.sync !== "del").sort((a, b) => String(b.aggiornata || "").localeCompare(String(a.aggiornata || "")));
+  let h = `<div class="f-testa"><div class="testa-in gutter contenuto"><button class="indietro" id="chiudiFoglio" aria-label="Chiudi">&#8249;</button><div class="testa-tit"><div class="app">Ispezioni caricate</div><div class="sub">${lista.length === 1 ? "1 ispezione" : lista.length + " ispezioni"} su questo telefono</div></div></div></div><div class="f-corpo gutter"><div class="contenuto">`;
+  if (!lista.length) h += `<p class="sp">Nessuna ispezione caricata.</p>`;
+  h += `<div class="gest">`;
+  for (const i of lista) {
+    const foto = fotoDi(i.id), nonEsp = foto.filter((f) => !alSicuro(f)).length, p = precDi(i.id);
+    const c = conteggi(i.id), con = i.difetti.filter((d) => c.get(d.id)).length;
+    h += `<div class="gest-isp"><div class="nome">${esc(i.opera || i.cartella)}</div><div class="meta">` +
+      `<span>Ispezione <b>${esc(i.ispezione || "-")}</b> · ${i.difetti.length} difetti${i.aggiornata ? ` · caricata il ${esc(dataBreve(i.aggiornata))}` : ""}</span>` +
+      `<span><b>${foto.length}</b> ${foto.length === 1 ? "foto scattata" : "foto scattate"} · ${con} ${con === 1 ? "difetto" : "difetti"} con foto${nonEsp ? ` · <span class="att">${nonEsp} ${S.drive ? "non ancora su Drive" : "non esportate"}</span>` : foto.length ? (S.drive ? " · tutte su Drive" : " · tutte esportate") : ""}</span>` +
+      (p && p.info ? `<span>Foto ultima ispezione: ${quantePrec(i)} di ${i.difetti.length} difetti</span>` : "") + `</div>`;
+    if (g.conferma === i.id) {
+      const dove = S.cloud === "ok" ? "dal telefono e dallo spazio online" : S.drive ? "dal telefono (sul Drive resta tutto)" : "dal telefono";
+      h += `<div class="conferma"><b>Eliminare questa ispezione?</b><span>Si cancellano ${dove} l'elenco dei difetti${foto.length === 1 ? ", la foto scattata" : foto.length ? `, le ${foto.length} foto scattate` : ""}${p && p.info ? " e le foto dell'ultima ispezione" : ""}. Non si può annullare.</span>` +
+        (nonEsp ? `<span><b>Attenzione: ${S.drive ? (nonEsp === 1 ? "1 foto non è ancora sul Drive né esportata e andrà persa" : nonEsp + " foto non sono ancora sul Drive né esportate e andranno perse") : (nonEsp === 1 ? "1 foto non è ancora stata esportata e andrà persa" : nonEsp + " foto non sono ancora state esportate e andranno perse")}.</b></span>` : "") +
+        `<div class="bt"><button class="btn picc peric" id="eliminaIspSi">Elimina</button><button class="btn picc" id="eliminaIspNo">Annulla</button></div></div>`;
+    } else {
+      h += `<div class="bt"><button class="btn picc" data-apri-g="${esc(i.id)}">Apri</button><button class="btn picc peric" data-elimina-isp="${esc(i.id)}">Elimina</button></div>`;
+    }
+    h += `</div>`;
+  }
+  h += `</div>`;
+  if (lista.length) h += `<p class="sp" style="margin-top:14px">Il report e i PDF restano dove li avevi presi (Drive, Download): puoi ricaricarli quando vuoi. Le foto eliminate invece non si recuperano.</p>`;
+  h += `</div></div>`;
+  el.innerHTML = h; el.hidden = false;
+}
+async function eliminaIspezione(id) {
+  const isp = S.isp.get(id); if (!isp) return;
+  const nome = isp.opera || isp.cartella;
+  if (S.drive && S.autonoma) {   // col Drive si toglie solo dal telefono: sul Drive resta tutto
+    for (const f of [...S.foto.values()]) if (f.isp === id) { S.foto.delete(f.id); await lDel("foto", f.id); liberaMini(f.id); }
+  } else for (const f of [...S.foto.values()]) if (f.isp === id && f.sync !== "del") await eliminaFoto(f.id, true);
+  const p = S.prec.get(id);
+  const asset = p ? [...p.foto.values()].map((r) => r.asset).filter(Boolean) : [];
+  if (p) {
+    const ids = [...p.foto.values()].map((r) => r.id).concat(p.info ? [p.info.id] : []);
+    for (const k of ids) { const u = S.precUrl.get(k); if (u) URL.revokeObjectURL(u); S.precUrl.delete(k); }
+    S.prec.delete(id);
+    await lScrivi("prec", [], ids);
+  }
+  // l'oggetto puo' essere stato sostituito da un aggiornamento online arrivato nel frattempo: uso quello attuale
+  const ora = S.isp.get(id) || isp;
+  if (S.cap.db) { ora.sync = "del"; ora.precAsset = asset; S.isp.set(id, ora); await lPut("ispezioni", ora); }
+  else { S.isp.delete(id); await lDel("ispezioni", id); }
+  for (const k of [...S.sel]) if (S.aperta === id) S.sel.delete(k);
+  if (S.aperta === id) { S.aperta = null; try { localStorage.removeItem("argo-aperta"); } catch (e) {} }
+  if (S.gest) S.gest.conferma = null;
+  disegna(); disegnaGestione(); sincronizza();
+  mostraToast(`<b>Ispezione eliminata</b>${esc(nome)}`);
+}
+
+/* ---------------- navigazione ---------------- */
+function apriIspezione(id) { S.aperta = id; S.sel.clear(); S.cerca = ""; S.soloSenza = false; window.scrollTo(0, 0); disegna(); try { localStorage.setItem("argo-aperta", id); } catch (e) {} }
+function chiudiIspezione() { S.aperta = null; S.sel.clear(); disegna(); try { localStorage.removeItem("argo-aperta"); } catch (e) {} }
+function chiudiFoglio() { S.dettaglio = null; S.esp = null; S.gest = null; S.statoAperto = false; $("#foglio").hidden = true; disegna(); }
+
+/* ---------------- pagina «Stato dell'app»: cosa c'e' su questo dispositivo e cosa online ---------------- */
+function apriStato() { S.statoAperto = true; disegnaStato(); }
+function disegnaStato() {
+  const el = $("#foglio"); if (!S.statoAperto) return;
+  const st = statoSync();
+  const isp = [...S.isp.values()];
+  const cont = (arr, f) => arr.filter(f).length;
+  const foto = [...S.foto.values()];
+  const D = !!(S.drive && S.autonoma), dove = D ? "su Drive" : "online";
+  const errore = { "": "", pieno: "spazio online pieno", permission_denied: "permesso negato", forbidden: "permesso negato", unauthenticated: "accesso non valido" };
+  const err = S.sync.errore ? (D ? spiegaErroreDrive(S.sync.errore, S.sync.messaggio) : (errore[S.sync.errore] || S.sync.errore)) : "";
+  const righe = [
+    ["Versione app", VERSIONE],
+    ["Account", D ? "versione autonoma con Google Drive" : S.cloud === "assente" ? (S.autonoma ? "versione autonoma, senza Drive" : "non collegato") : S.ruolo === "invitato" ? "invitato (spazio online personale)" : S.ruolo === "proprietario" ? "proprietario" : "-"],
+    D ? ["Salvataggio su Drive", err ? "non riesce: " + err + (S.sync.fotoErrore ? " (foto " + S.sync.fotoErrore + ")" : "") : "attivo"]
+      : ["Salvataggio online", S.cloud === "ok" ? (err ? "non riesce: " + err + (S.sync.fotoErrore ? " (foto " + S.sync.fotoErrore + ")" : "") : "attivo") : S.senzaSpazio ? "non disponibile per questo account" : "non disponibile"],
+    ...(D ? [["Cartella del Drive", (S.drive.cartella || "?") + (S.drive.proprietario ? " · di " + S.drive.proprietario : "")]] : []),
+    ["Archivio su questo dispositivo", S.locale ? "attivo" : "non disponibile (le foto restano solo in memoria)"],
+    ["Schede visibili", String(cont(isp, (i) => i.sync !== "del"))],
+    ["Schede da salvare " + dove, String(cont(isp, (i) => i.sync !== "del" && (D ? !ispFattaDrive(i) : i.sync !== "ok")))],
+    ...(D ? [] : [["Schede in eliminazione", String(cont(isp, (i) => i.sync === "del"))]]),
+    ["Foto in totale", String(cont(foto, (f) => f.sync !== "del"))],
+    ["Foto salvate " + dove, String(cont(foto, (f) => f.sync !== "del" && (D ? suDrive(f) : (!f.locale || f.sync === "ok"))))],
+    ["Foto solo su questo dispositivo", String(cont(foto, (f) => f.locale && f.sync !== "ok" && f.sync !== "del"))],
+    ["Foto in eliminazione", String(cont(foto, (f) => f.sync === "del"))],
+    ...(precRifiutate() ? [["Foto dell'ultima ispezione non salvate online", String(precRifiutate())]] : []),
+  ];
+  const orfane = fotoSenzaScheda();
+  let h = `<div class="f-testa"><div class="testa-in gutter contenuto"><button class="indietro" id="chiudiFoglio" aria-label="Chiudi">&#8249;</button><div class="testa-tit"><div class="app">Stato dell'app</div><div class="sub">${esc(st.t)}</div></div></div></div><div class="f-corpo gutter"><div class="contenuto">`;
+  const rif = fotoRifiutate();
+  h += `<p class="sp">${esc(S.cloud === "assente" && !D ? "Le foto sono salvate solo su questo dispositivo, finché non le esporti per il PC." : daCaricare() ? `Le foto sono al sicuro su questo dispositivo e verranno salvate ${dove} appena possibile.` : rif.length ? `Le foto sono al sicuro su questo dispositivo, ma alcune non si possono salvare ${dove}: esportale per il PC da qui.` : `Tutto quello che c'è su questo dispositivo è salvato anche ${dove}.`)}</p>`;
+  h += `<div class="gest-isp"><div class="meta">${righe.map(([k, v]) => `<span>${esc(k)}: <b>${esc(v)}</b></span>`).join("")}</div></div>`;
+  if (rif.length) {
+    h += `<div class="avviso bad" style="margin-top:12px"><b>${rif.length} ${rif.length === 1 ? "foto non si può" : "foto non si possono"} salvare ${dove}.</b> Restano su questo telefono: esporta le ispezioni con «Esporta per il PC» da questo telefono.</div>`;
+    h += `<div class="gest-isp" style="margin-top:8px">${rif.slice(0, 8).map((f, i) => `<div class="meta"${i ? ' style="border-top:1px solid var(--line);padding-top:8px"' : ""}><b>${esc(f.nome || f.id)}</b><span>Ispezione ${esc(f.isp)} · formato ${esc(nomeFormato(f.formato))} · dichiarata ${esc(f.tipo || "-")} · ${((f.size || 0) / 1048576).toFixed(1)} MB</span><span class="att">${esc(f.motivo || "")}</span></div>`).join("")}${rif.length > 8 ? `<div class="meta" style="border-top:1px solid var(--line);padding-top:8px"><span>… e altre ${rif.length - 8}</span></div>` : ""}</div>`;
+  }
+  if (orfane.length) h += `<p class="sp" style="margin-top:12px"><b>Foto senza scheda:</b> ${orfane.map((r) => `ispezione ${esc(r.isp)} (${r.tot})`).join(", ")}. Ricarica il report di quelle ispezioni dalla pagina iniziale.</p>`;
+  if (S.cloud === "ok" || D) h += `<div style="margin-top:14px"><button class="btn blocco picc" id="riprovaSync" ${S.sync.inCorso ? "disabled" : ""}>${S.sync.inCorso ? "Salvataggio in corso…" : "Riprova a salvare " + dove}</button></div>`;
+  if (D) {
+    h += `<h2 class="sez">Google Drive</h2><p class="sp">Chi usa lo stesso Drive (anche con un altro account) deve solo aprire questo link sul suo telefono.</p>` +
+      `<div class="bt" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn picc" id="copiaLinkDrive">Copia il link per i colleghi</button><button class="btn picc" id="scollegaDrive">Scollega il Drive</button></div>` +
+      (S.linkMostrato ? `<p class="sp" style="margin-top:8px;overflow-wrap:anywhere"><b>Link:</b> ${esc(linkApp(S.drive.url))}</p>` : "");
+  } else if (S.autonoma) {
+    h += `<h2 class="sez">Google Drive</h2><p class="sp">Per mandare le foto direttamente nel Drive, apri il link che ti ha mandato chi gestisce il Drive oppure incollalo qui.</p>` +
+      `<form id="formDrive" class="form-drive"><input type="url" inputmode="url" autocomplete="off" placeholder="Link del Drive" aria-label="Link del Drive"><button class="btn picc prim" type="submit">Collega</button></form>`;
+  }
+  h += `<p class="sp" style="margin-top:14px">Se qualcosa non torna, fai uno screenshot di questa pagina e mandalo a chi ti ha condiviso l'app.</p>`;
+  h += `</div></div>`;
+  el.innerHTML = h; el.hidden = false;
+}
+
+/* ---------------- eventi ---------------- */
+document.addEventListener("click", async (ev) => {
+  const t = ev.target;
+  const b = (sel) => t.closest(sel);
+  if (b("#btnIndietro")) return chiudiIspezione();
+  if (b("#btnStato")) return apriStato();
+  if (b("#scollegaDrive")) { scollegaDrive(); return mostraToast("<b>Drive scollegato</b>Le foto restano su questo telefono. Per ricollegarlo apri di nuovo il link."); }
+  if (b("#copiaLinkDrive")) {
+    const l = linkApp(S.drive.url);
+    try { await navigator.clipboard.writeText(l); mostraToast("<b>Link copiato</b>Mandalo ai colleghi che usano questo Drive: lo aprono sul telefono e l'app si collega da sola.", null, 5000); }
+    catch (e) { S.linkMostrato = true; disegnaStato(); }
+    return;
+  }
+  if (b("#riprovaSync")) {
+    if (S.sync.inCorso) return;
+    S.sync.errore = ""; S.sync.attesa = 0;
+    // riprova anche le foto rifiutate (e quelle dell'ultima ispezione rimaste solo qui)
+    for (const f of [...S.foto.values()]) if (f.soloTelefono || f.fallimenti) { f.soloTelefono = false; f.motivo = ""; f.fallimenti = 0; await salvaLocale(f); }
+    for (const p of S.prec.values()) {
+      let manca = false;
+      for (const r of p.foto.values()) { if (r.rifiutata || r.fallimenti) { delete r.rifiutata; r.fallimenti = 0; } if (r.blob && !r.asset) manca = true; }
+      if (manca && p.info) p.info.online = "";
+    }
+    sincronizza(); return disegnaStato();
+  }
+  if (b("[data-ricarica]")) { mostraToast("<b>Scegli il report</b>«Riepilogo difetti Livello 1» dell'ispezione " + esc(b("[data-ricarica]").dataset.ricarica) + ". Se non si apre niente, apri l'app da Chrome.", null, 5000); return $("#inElenco").click(); }
+  if (b("#btnAggiungi") || b("#btnPrec")) { mostraToast("<b>Scegli il file</b>Se non si apre niente, apri l'app da Chrome: l'app Claude non permette di scegliere i file.", null, 4000); return $("#inElenco").click(); }
+  if (b("#btnGestisci")) return apriGestione();
+  const ag = b("[data-apri-g]"); if (ag) { const id = ag.dataset.apriG; chiudiFoglio(); return apriIspezione(id); }
+  const ei = b("[data-elimina-isp]"); if (ei) { S.gest.conferma = ei.dataset.eliminaIsp; return disegnaGestione(); }
+  if (b("#eliminaIspNo")) { S.gest.conferma = null; return disegnaGestione(); }
+  if (b("#eliminaIspSi")) return eliminaIspezione(S.gest.conferma);
+  const ap = b("[data-apri]"); if (ap) return apriIspezione(ap.dataset.apri);
+
+  // foto dell'ultima ispezione
+  if (b("#chiudiPrec")) { S.vistaPrec = null; return disegnaPrec(); }
+  if (b("#precPrima") || b("#precDopo")) { const isp = S.isp.get(S.aperta), l = isp ? chiaviPrec(isp) : [], i = l.indexOf(S.vistaPrec) + (b("#precDopo") ? 1 : -1); if (i >= 0 && i < l.length) { S.vistaPrec = l[i]; disegnaPrec(); } return; }
+  if (b("#scattaPrec")) { S.sel = new Set([S.vistaPrec]); S.vistaPrec = null; disegnaPrec(); if (S.dettaglio) chiudiFoglio(); else disegna(); return $("#inCamera").click(); }
+  const pv = b("[data-prec]"); if (pv) { ev.preventDefault(); return apriPrec(pv.dataset.prec); }
+
+  // foglio esporta / dettaglio
+  if (b("#chiudiFoglio")) return chiudiFoglio();
+  if (b("#creaPacchetto")) return creaPacchetto();
+  const sv = b("[data-salva]"); if (sv) return salvaParte(+sv.dataset.salva);
+  if (b("#pulisci")) { S.esp.conferma = "elimina"; return disegnaEsporta(); }
+  if (b("#pulisciNo")) { S.esp.conferma = null; return disegnaEsporta(); }
+  if (b("#pulisciSi")) return pulisciEsportate();
+  if (b("#scattaQui")) { S.sel = new Set([S.dettaglio]); chiudiFoglio(); return $("#inCamera").click(); }
+  const mf = b("[data-foto]"); if (mf) return apriFoto(mf.dataset.foto);
+
+  // vista foto
+  if (b("#chiudiVista")) { S.vista = null; disegnaFotoGrande(); if (S.dettaglio) disegnaDettaglio(); return; }
+  if (b("#galleriaFoto")) { copiaInGalleria([S.vista.id]); return disegnaFotoGrande(); }
+  if (b("#galleriaTutte")) { const isp = S.isp.get(S.aperta); if (isp) copiaInGalleria(fotoDi(isp.id).filter((f) => !f.galleria).sort((a, b) => String(a.scattata).localeCompare(String(b.scattata))).map((f) => f.id)); return disegnaEsporta(); }
+  if (b("#eliminaFoto")) { S.vista.conferma = true; return disegnaFotoGrande(); }
+  if (b("#eliminaNo")) { S.vista.conferma = false; return disegnaFotoGrande(); }
+  if (b("#eliminaSi")) { await eliminaFoto(S.vista.id); S.vista = null; disegnaFotoGrande(); if (S.dettaglio) disegnaDettaglio(); return mostraToast("<b>Foto eliminata</b>"); }
+  const tg = b("[data-togli]");
+  if (tg) { const f = S.foto.get(S.vista.id); await cambiaDest(f.id, f.dest.filter((k) => k !== tg.dataset.togli)); disegnaFotoGrande(); if (S.dettaglio) disegnaDettaglio(); disegna(); return; }
+
+  // ispezione
+  if (b("#btnEsporta")) return apriEsporta();
+  if (b("#btnSenza")) { S.soloSenza = !S.soloSenza; b("#btnSenza").setAttribute("aria-pressed", S.soloSenza); return disegnaElenco(); }
+  const pt = b("[data-parte]"); if (pt) { const p = pt.dataset.parte; S.chiusi.has(p) ? S.chiusi.delete(p) : S.chiusi.add(p); return disegnaElenco(); }
+  const cp = b("[data-comp]");
+  if (cp) { const keys = cp.dataset.comp.split("\n"); const tutti = keys.every((k) => S.sel.has(k)); keys.forEach((k) => tutti ? S.sel.delete(k) : S.sel.add(k)); disegnaElenco(); return disegnaBarra(); }
+  const det = b("[data-dettaglio]"); if (det && det.classList.contains("si")) { ev.preventDefault(); return apriDettaglio(det.dataset.dettaglio); }
+  const df = b(".dif"); if (df) { const k = df.dataset.key; S.sel.has(k) ? S.sel.delete(k) : S.sel.add(k); df.setAttribute("aria-pressed", S.sel.has(k)); aggiornaComp(); return disegnaBarra(); }
+  if (b("#btnDesel")) { S.sel.clear(); disegnaElenco(); return disegnaBarra(); }
+  if (b("#btnScatta")) return $("#inCamera").click();
+  if (b("#btnGalleria")) return $("#inGalleria").click();
+});
+function aggiornaComp() {
+  for (const cp of document.querySelectorAll("[data-comp]")) { const keys = cp.dataset.comp.split("\n"); cp.textContent = keys.every((k) => S.sel.has(k)) ? "Togli tutti" : "Spunta tutti"; }
+}
+document.addEventListener("change", (ev) => {
+  const t = ev.target;
+  if (t.id === "inCamera") return suScatto(t, true);
+  if (t.id === "inGalleria") return suScatto(t, false);
+  if (t.id === "inElenco") {
+    const fs = [...(t.files || [])]; t.value = "";
+    if (!fs.length) { mostraToast("<b>Nessun file scelto</b>", null, 3000); return; }
+    mostraToast(`<b>File ricevuti: ${fs.length}</b>${esc(fs.map((f) => f.name).join(", ").slice(0, 120))}`, null, 3000);
+    (async () => {
+      const pdf = fs.filter((f) => /\.pdf$/i.test(f.name) || f.type === "application/pdf");
+      for (const f of fs) if (!pdf.includes(f)) await importaElenco(f);
+      for (const f of pdf) await importaPdf(f, S.aperta);
+    })();
+    return;
+  }
+  if (t.name === "quali") { S.esp.quali = t.value; return disegnaEsporta(); }
+  if (t.id === "optGalleria") {
+    try { localStorage.setItem("argo-galleria", t.checked ? "1" : "0"); } catch (e) {}
+    return mostraToast(t.checked ? "<b>Copia nella galleria attiva</b>Dopo ogni scatto conferma il salvataggio della copia." : "<b>Copia nella galleria disattivata</b>", null, 3500);
+  }
+});
+function disegnaElenco() { const el = $("#elenco"), isp = S.isp.get(S.aperta); if (el && isp) conservaCampi(el, () => { el.innerHTML = htmlElenco(isp); }); }
+document.addEventListener("input", (ev) => {
+  if (ev.target.id === "cerca") { S.cerca = ev.target.value; disegnaElenco(); }
+});
+document.addEventListener("submit", async (ev) => {
+  if (ev.target.id === "formDrive") { ev.preventDefault(); const i = ev.target.querySelector("input"); const v = i ? i.value : ""; if (await collegaDrive(v) && i) i.value = ""; return; }
+  if (ev.target.id !== "formNuovo") return;
+  ev.preventDefault();
+  const isp = S.isp.get(S.aperta), nome = nomeCartella($("#nuovoNome").value, 70);
+  if (!isp || !$("#nuovoNome").value.trim()) return;
+  $("#nuovoNome").value = ""; $("#nuovoNome").blur();
+  isp.nuovi = [...new Set([...(isp.nuovi || []), nome])];
+  isp.sync = "mod"; isp.aggiornata = new Date().toISOString();
+  S.sel = new Set([PREF_NUOVO + nome]);   // subito, prima di qualsiasi attesa: lo scatto successivo va qui
+  disegna();
+  await lPut("ispezioni", isp);
+  sincronizza();
+  mostraToast(`<b>Nuovo difetto creato</b>Ora è l'unico spuntato: scatta le sue foto.`);
+});
+
+/* ---------------- avvio ---------------- */
+(async function avvio() {
+  disegna();
+  await caricaLocale();
+  try { const a = localStorage.getItem("argo-aperta"); if (a && S.isp.has(a)) S.aperta = a; } catch (e) {}
+  disegna();
+  collegaOnline();
+})();
+</script>
+</body></html>

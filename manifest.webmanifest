@@ -1,0 +1,25 @@
+{
+  "name": "Foto Cavalcavia",
+  "short_name": "Foto Cavalcavia",
+  "description": "Foto dei difetti dei cavalcavia, assegnate in campo e salvate su Google Drive.",
+  "lang": "it",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#17202a",
+  "theme_color": "#17202a",
+  "icons": [
+    {
+      "src": "icona-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icona-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

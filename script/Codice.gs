@@ -2,8 +2,8 @@
  * Foto Cavalcavia - riceve le foto scattate con l'app e le salva in questo Google Drive.
  *
  * Non serve modificare niente: basta pubblicarlo come «App web» (Esegui come: Me, Chi ha accesso: Chiunque).
- * Le foto arrivano nella cartella «FOTO CAVALCAVIA DAL TELEFONO» (la crea lo script; puoi spostarla dove vuoi
- * nel Drive, anche rinominarla: lo script la ritrova lo stesso).
+ * Le foto arrivano nella cartella scelta sul telefono; se non se ne sceglie una, in «FOTO CAVALCAVIA DAL TELEFONO»
+ * (la crea lo script; puoi spostarla dove vuoi nel Drive, anche rinominarla: lo script la ritrova lo stesso).
  *
  *   <cartella>/<ispezione>/_ispezione.json     elenco dei difetti dell'ispezione
  *   <cartella>/<ispezione>/foto/<id>.<est>     la foto, originale
@@ -13,7 +13,7 @@
  */
 const NOME_CARTELLA = "FOTO CAVALCAVIA DAL TELEFONO";
 const INDIRIZZO_APP = "https://g-iv-ingegneria.github.io/foto-cavalcavia/";
-const VERSIONE_SCRIPT = 1;
+const VERSIONE_SCRIPT = 2;
 
 function doGet(e) {
   const r = radice_();
@@ -32,12 +32,15 @@ function doGet(e) {
 function doPost(e) {
   try {
     const q = JSON.parse((e && e.postData && e.postData.contents) || "{}");
+    if (q.radice && !cartellaScelta_(q.radice)) return json_({ ok: false, errore: "cartella_non_trovata" });
     switch (q.a) {
       case "ping": return json_(ping_(radice_()));
       case "ispezione": return json_(ispezione_(q));
       case "foto": return json_(foto_(q));
       case "meta": return json_(meta_(q));
       case "elimina": return json_(elimina_(q));
+      case "cartelle": return json_(elencoCartelle_(q));
+      case "nuova": return json_(nuovaCartella_(q));
       default: return json_({ ok: false, errore: "azione sconosciuta" });
     }
   } catch (err) {
@@ -47,12 +50,48 @@ function doPost(e) {
 
 /* ---------------- azioni ---------------- */
 function ping_(r) {
-  return { ok: true, versione: VERSIONE_SCRIPT, cartella: r.getName(), proprietario: Session.getEffectiveUser().getEmail() };
+  return { ok: true, versione: VERSIONE_SCRIPT, cartella: r.getName(), predefinita: r.getId(), proprietario: Session.getEffectiveUser().getEmail() };
+}
+// cartelle del Drive per sceglierne una dal telefono: «» = Il mio Drive, «condivisi» = Condivisi con me
+function elencoCartelle_(q) {
+  const dentro = String(q.dentro || "");
+  let it, percorso;
+  if (dentro === "condivisi") { it = DriveApp.searchFolders("sharedWithMe = true"); percorso = [{ id: "condivisi", nome: "Condivisi con me" }]; }
+  else {
+    const c = dentro ? DriveApp.getFolderById(dentro) : DriveApp.getRootFolder();
+    if (c.isTrashed()) return { ok: false, errore: "cartella_non_trovata" };
+    it = c.getFolders(); percorso = percorso_(c);
+  }
+  const cartelle = [];
+  while (it.hasNext() && cartelle.length < 300) { const f = it.next(); if (!f.isTrashed()) cartelle.push({ id: f.getId(), nome: f.getName() }); }
+  cartelle.sort(function (a, b) { return a.nome.localeCompare(b.nome, "it", { numeric: true, sensitivity: "base" }); });
+  return { ok: true, cartelle: cartelle, percorso: percorso, predefinita: { id: radice_().getId(), nome: NOME_CARTELLA } };
+}
+function nuovaCartella_(q) {
+  const nome = pulisci_(q.nome, 80);
+  if (!nome) return { ok: false, errore: "nome della cartella mancante" };
+  const dentro = String(q.dentro || "");
+  const padre = dentro && dentro !== "condivisi" ? DriveApp.getFolderById(dentro) : DriveApp.getRootFolder();
+  const f = conLock_(function () { return sotto_(padre, nome); });
+  return { ok: true, id: f.getId(), nome: f.getName(), percorso: percorso_(f) };
+}
+// dal Drive alla cartella: [{id, nome}, …] (le cartelle condivise si fermano dove finisce l'accesso)
+function percorso_(f) {
+  const radiceId = DriveApp.getRootFolder().getId(), out = [];
+  let c = f;
+  for (let n = 0; c && n < 15; n++) {
+    if (c.getId() === radiceId) { out.unshift({ id: "", nome: "Il mio Drive" }); break; }
+    out.unshift({ id: c.getId(), nome: c.getName() });
+    let p = null;
+    try { const it = c.getParents(); p = it.hasNext() ? it.next() : null; } catch (err) {}
+    c = p;
+  }
+  return out;
 }
 function ispezione_(q) {
   if (!q.dati || typeof q.dati !== "object") return { ok: false, errore: "dati mancanti" };
   return conLock_(function () {
-    const c = cartelle_(q.cartella);
+    const c = cartelle_(q.cartella, q.radice);
     scriviJson_(c.isp, "_ispezione.json", q.dati);
     return { ok: true };
   });
@@ -61,7 +100,7 @@ function foto_(q) {
   const file = nomeFile_(q.file), id = idFoto_(q.id);
   if (!file || !id || file.indexOf(id + ".") !== 0) return { ok: false, errore: "nome della foto non valido" };
   if (!q.b64) return { ok: false, errore: "foto mancante" };
-  const c = conLock_(function () { return cartelle_(q.cartella); });
+  const c = conLock_(function () { return cartelle_(q.cartella, q.radice); });
   const dati = Utilities.base64Decode(q.b64);
   if (q.size && dati.length !== q.size) return { ok: false, errore: "foto arrivata incompleta (" + dati.length + " di " + q.size + " byte)" };
   let f = primo_(c.foto.getFilesByName(file));
@@ -73,14 +112,14 @@ function foto_(q) {
 function meta_(q) {
   const id = idFoto_(q.id);
   if (!id) return { ok: false, errore: "foto non valida" };
-  const c = conLock_(function () { return cartelle_(q.cartella); });
+  const c = conLock_(function () { return cartelle_(q.cartella, q.radice); });
   scriviJson_(c.foto, id + ".json", q.meta || {});
   return { ok: true };
 }
 function elimina_(q) {
   const id = idFoto_(q.id), file = nomeFile_(q.file);
   if (!id) return { ok: false, errore: "foto non valida" };
-  const c = conLock_(function () { return cartelle_(q.cartella); });
+  const c = conLock_(function () { return cartelle_(q.cartella, q.radice); });
   let n = 0;
   [file, id + ".json"].forEach(function (nome) {
     if (!nome) return;
@@ -101,8 +140,12 @@ function radice_() {
   p.setProperty("radice", r.getId());
   return r;
 }
-function cartelle_(nome) {
-  const isp = sotto_(radice_(), pulisci_(nome, 80) || "senza_ispezione");
+function cartellaScelta_(id) {
+  try { const f = DriveApp.getFolderById(String(id)); return f.isTrashed() ? null : f; } catch (err) { return null; }
+}
+function cartelle_(nome, radice) {
+  const base = (radice && cartellaScelta_(radice)) || radice_();
+  const isp = sotto_(base, pulisci_(nome, 80) || "senza_ispezione");
   return { isp: isp, foto: sotto_(isp, "foto") };
 }
 function sotto_(padre, nome) { return primo_(padre.getFoldersByName(nome)) || padre.createFolder(nome); }

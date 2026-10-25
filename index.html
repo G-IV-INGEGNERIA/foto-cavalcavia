@@ -254,7 +254,7 @@ p.sp { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
    quando c'e' campo. Esporta pacchetti ZIP per il PC (importa_telefono.py).
    ===================================================================== */
 
-const VERSIONE = "18 (25/10)";
+const VERSIONE = "19 (25/10)";
 const LIMITE_PARTE = 180 * 1024 * 1024;     // sotto i 200 MB dell'app Claude per Android
 const LIMITE_ASSET = 20 * 1024 * 1024;
 const TIPI_ONLINE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -351,7 +351,7 @@ function fotoPerLocale(f) {
   return { id, isp, nome, scattata, dest, blob, thumb, size, tipo, asset: asset || null, esportata: !!esportata, sync, creata, galleria: !!galleria,
     convertita: !!f.convertita, sizeOnline: f.sizeOnline || 0, soloTelefono: !!f.soloTelefono, motivo: f.motivo || "", formato: f.formato || "",
     fallimenti: f.fallimenti || 0, inConversione: !!f.inConversione,
-    drive: f.drive || null, driveFile: f.driveFile || "", driveNome: f.driveNome || "", driveCartella: f.driveCartella || "", driveUrl: f.driveUrl || "", driveRadice: f.driveRadice || "", driveDest: f.driveDest || "" };
+    drive: f.drive || null, driveFile: f.driveFile || "", driveNome: f.driveNome || "", driveCartella: f.driveCartella || "", driveUrl: f.driveUrl || "", driveRadice: f.driveRadice || "", driveDest: f.driveDest || "", driveLayout: f.driveLayout || 0, driveNomi: f.driveNomi || [] };
 }
 // scrive la foto sul telefono solo se c'e' ancora (non riportare in vita una foto appena eliminata)
 async function salvaLocale(f) { if (S.foto.get(f.id) === f && f.locale) await lPut("foto", fotoPerLocale(f)); }
@@ -820,7 +820,7 @@ async function passaAlDrive(nuovo, tutte) {
   for (const f of S.foto.values()) {
     if (!f.locale || f.sync === "del" || f.driveUrl === nuovo.url) continue;
     if (!tutte && f.drive && f.sync === "ok") continue;   // gia' al sicuro nel Drive di prima: resta li'
-    f.drive = null; f.driveUrl = ""; f.driveRadice = ""; f.driveDest = ""; if (f.sync === "ok" || f.sync === "mod") f.sync = "nuova";
+    f.drive = null; f.driveUrl = ""; f.driveRadice = ""; f.driveDest = ""; f.driveLayout = 0; f.driveNomi = []; if (f.sync === "ok" || f.sync === "mod") f.sync = "nuova";
     f.soloTelefono = false; f.motivo = ""; f.fallimenti = 0; await salvaLocale(f);
   }
   for (const i of S.isp.values()) i.driveFatto = "";
@@ -924,8 +924,28 @@ async function aggiornaInfoDrive(forza) {
 }
 function scollegaDrive() { S.drive = null; S.cart = null; S.cambioDrive = null; scriviDrive(null); S.sync.errore = ""; disegna(); if (S.statoAperto) disegnaStato(); }
 function cartellaDrive(i) { return String((i && (i.cartella || [i.ispezione, i.opera].filter(Boolean).join("_"))) || "senza_ispezione"); }
+/* Nome delle foto sul Drive (script dalla versione 3), come in FOTO_PER_ARGO sul PC:
+   PARTE D'OPERA_COMPONENTE_DESCRIZIONE_ID DIFETTO (+ _01.jpg aggiunto dallo script), FOTO GENERALI, NUOVO DIFETTO_<nome>.
+   Al massimo 90 caratteri: con _01.heic resta sotto i 100 che ARGO accetta. Se serve si accorciano prima la
+   descrizione, poi componente e parte d'opera; l'ID resta sempre intero. */
+const MAX_PREFISSO = 90;
+function nomePC(t, max) { let s = nomeCartella(t, max); if (/^(CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])(\.|$)/i.test(s)) s = "_" + s; return s; }
+function prefissoFoto(chiave, isp, max = MAX_PREFISSO) {
+  if (chiave === CHIAVE_GENERALI) return "FOTO GENERALI";
+  if (chiave.startsWith(PREF_NUOVO)) return "NUOVO DIFETTO_" + nomePC(chiave.slice(PREF_NUOVO.length), 40);
+  const d = ((isp && isp.difetti) || []).find((x) => x.id === chiave) || {};
+  const testi = [d.parte, d.componente, d.descrizione].map((x) => String(x || "").trim());
+  const lim = [30, 40, 60], min = [10, 10, 12];
+  const costruisci = () => testi.map((t, k) => (t ? nomePC(t, lim.at(k)) : "")).filter(Boolean).concat([String(chiave)]).join("_");
+  let nome = costruisci();
+  for (const k of [2, 1, 0]) while (nome.length > max && lim[k] > min[k]) { lim[k] = Math.max(min[k], lim[k] - (nome.length - max)); nome = costruisci(); }
+  for (const k of [2, 1, 0]) if (nome.length > max) { testi[k] = ""; nome = costruisci(); }
+  return nome;
+}
+function vociFoto(f, i) { return (f.dest || []).map((k) => ({ chiave: k, prefisso: prefissoFoto(k, i) })); }
+const nomiArgo = () => !!S.drive && (S.drive.versione || 1) >= 3;
 function ispPerDrive(i) { return { formato: "argo-foto-drive", versione: 1, ispezione: i.ispezione || "", opera: i.opera || "", cartella: i.cartella || "", difetti: i.difetti || [], nuovi: i.nuovi || [] }; }
-function chiaveDrive() { return S.drive ? S.drive.url + "|" + ((S.drive.radice && S.drive.radice.id) || "") : ""; }
+function chiaveDrive() { return S.drive ? S.drive.url + "|" + ((S.drive.radice && S.drive.radice.id) || "") + (nomiArgo() ? "|3" : "") : ""; }
 function ispFattaDrive(i) { return !!S.drive && i.driveFatto === chiaveDrive() + "|" + hashTesto(JSON.stringify(ispPerDrive(i))); }
 function metaDrive(f, i, nome) { return { formato: "argo-foto-drive", versione: 1, id: f.id, nome, scattata: f.scattata || "", dest: f.dest || [], ispezione: (i && i.ispezione) || f.isp || "", dispositivo: idDispositivo() }; }
 const MIME_EST = { jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", webp: "image/webp", gif: "image/gif", heic: "image/heic", heif: "image/heif", avif: "image/avif", tif: "image/tiff", tiff: "image/tiff", bmp: "image/bmp", mp4: "video/mp4", mov: "video/quicktime" };
@@ -940,10 +960,14 @@ async function mandaFotoDrive(f, i, cartella) {
   const file = f.id + "." + est, meta = metaDrive(f, i, nome);
   let b64;
   try { b64 = await b64di(f.blob); } catch (e) { return rifiuta(f, "file non leggibile"); }
+  const radice = (S.drive.radice && S.drive.radice.id) || "", argo = nomiArgo();
   try {
-    const j = await chiamaDrive({ a: "foto", cartella, radice: (S.drive.radice && S.drive.radice.id) || "", id: f.id, file, mime: MIME_EST[est] || f.tipo || "application/octet-stream", size: f.blob.size, meta, b64 }, 600000);
-    if (S.foto.get(f.id) !== f || f.sync === "del") { try { await chiamaDrive({ a: "elimina", cartella, radice: (S.drive.radice && S.drive.radice.id) || "", id: f.id, file }); } catch (e) {} return "eliminata"; }   // eliminata mentre saliva
-    Object.assign(f, { drive: String(j.file || "ok"), driveFile: file, driveNome: nome, driveCartella: cartella, driveUrl: S.drive.url, driveRadice: (S.drive.radice && S.drive.radice.id) || "", driveDest: JSON.stringify(meta.dest), fallimenti: 0, _errore: "" });
+    const richiesta = { a: "foto", cartella, radice, id: f.id, mime: MIME_EST[est] || f.tipo || "application/octet-stream", size: f.blob.size, meta, b64 };
+    if (argo) Object.assign(richiesta, { est, voci: vociFoto(f, i) }); else richiesta.file = file;
+    const j = await chiamaDrive(richiesta, 600000);
+    if (S.foto.get(f.id) !== f || f.sync === "del") { try { await chiamaDrive({ a: "elimina", formato: argo ? 3 : undefined, cartella, radice, id: f.id, file }); } catch (e) {} return "eliminata"; }   // eliminata mentre saliva
+    Object.assign(f, { drive: argo ? "argo" : String(j.file || "ok"), driveFile: argo ? "" : file, driveNomi: argo ? (j.file || []).map((x) => x.nome) : [], driveLayout: argo ? 3 : 1,
+      driveNome: nome, driveCartella: cartella, driveUrl: S.drive.url, driveRadice: radice, driveDest: JSON.stringify(meta.dest), fallimenti: 0, _errore: "" });
     return "ok";
   } catch (e) {
     const code = codiceErrore(e);
@@ -963,7 +987,7 @@ async function sincronizzaDrive() {
     for (const i of [...S.isp.values()]) {
       if (i.sync === "del" || ispFattaDrive(i)) continue;
       const dati = ispPerDrive(i), testo = JSON.stringify(dati);
-      await chiamaDrive({ a: "ispezione", cartella: cartellaDrive(i), dati });
+      await chiamaDrive({ a: "ispezione", formato: nomiArgo() ? 3 : undefined, cartella: cartellaDrive(i), dati });
       if (S.isp.get(i.id) === i && S.drive && S.drive.url === url) { i.driveFatto = chiaveDrive() + "|" + hashTesto(testo); await lPut("ispezioni", i); }
     }
     for (const f of [...S.foto.values()]) {
@@ -971,7 +995,7 @@ async function sincronizzaDrive() {
       if (!S.drive || S.drive.url !== url) break;   // Drive cambiato nel frattempo
       const i = S.isp.get(f.isp);
       if (f.sync === "del") {
-        if (f.drive && f.driveUrl === url) await chiamaDrive({ a: "elimina", cartella: f.driveCartella || cartellaDrive(i), radice: f.driveRadice || "", id: f.id, file: f.driveFile });
+        if (f.drive && f.driveUrl === url) await chiamaDrive({ a: "elimina", formato: f.driveLayout === 3 ? 3 : undefined, cartella: f.driveCartella || cartellaDrive(i), radice: f.driveRadice || "", id: f.id, file: f.driveFile });
         S.foto.delete(f.id); await lDel("foto", f.id); liberaMini(f.id);
         continue;
       }
@@ -984,7 +1008,15 @@ async function sincronizzaDrive() {
         riuscite++;
       } else if (f.driveDest !== JSON.stringify(f.dest)) {   // gia' su Drive: cambiano solo i difetti
         const meta = metaDrive(f, i, f.driveNome || f.nome), dest = JSON.stringify(meta.dest);
-        if (f.driveUrl === url) await chiamaDrive({ a: "meta", cartella: f.driveCartella || cartellaDrive(i), radice: f.driveRadice || "", id: f.id, meta });
+        if (f.driveUrl === url && f.driveLayout === 3) {
+          try {
+            const j = await chiamaDrive({ a: "meta", cartella: f.driveCartella || cartellaDrive(i), radice: f.driveRadice || "", id: f.id, meta, voci: vociFoto(f, i) });
+            f.driveNomi = (j.file || []).map((x) => x.nome);
+          } catch (e) {
+            if (codiceErrore(e) === "drive_errore" && e.message === "foto_mancante") { f.drive = null; f.driveNomi = []; S.sync.ancora = true; await salvaLocale(f); continue; }   // sparita dal Drive: la rimando intera
+            throw e;
+          }
+        } else if (f.driveUrl === url) await chiamaDrive({ a: "meta", cartella: f.driveCartella || cartellaDrive(i), radice: f.driveRadice || "", id: f.id, meta });
         f.driveDest = dest;   // foto rimasta nel Drive di prima: li' non arrivo piu'
       }
       if (S.foto.get(f.id) === f && f.sync !== "del" && f.driveDest === JSON.stringify(f.dest)) { f.sync = "ok"; await salvaLocale(f); }

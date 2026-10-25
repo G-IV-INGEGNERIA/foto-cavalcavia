@@ -5,15 +5,16 @@
  * Le foto arrivano nella cartella scelta sul telefono; se non se ne sceglie una, in «FOTO CAVALCAVIA DAL TELEFONO»
  * (la crea lo script; puoi spostarla dove vuoi nel Drive, anche rinominarla: lo script la ritrova lo stesso).
  *
- *   <cartella>/<ispezione>/_ispezione.json     elenco dei difetti dell'ispezione
- *   <cartella>/<ispezione>/foto/<id>.<est>     la foto, originale
- *   <cartella>/<ispezione>/foto/<id>.json      i difetti a cui e' assegnata
+ *   <cartella>/<ispezione>/FOTO_PER_ARGO/      le foto, con il nome del difetto come sul PC:
+ *        PARTE D'OPERA_COMPONENTE_DESCRIZIONE_ID DIFETTO_01.jpg, FOTO GENERALI_01.jpg,
+ *        NUOVO DIFETTO_<nome>_01.jpg   (una copia per ogni difetto della foto; _01, _02… per difetto)
+ *   <cartella>/<ispezione>/_dati/              elenco dei difetti e una scheda per foto (da non toccare)
  *
  * Chi ha il link dello script puo' mandare foto in questa cartella: dallo solo ai colleghi.
  */
 const NOME_CARTELLA = "FOTO CAVALCAVIA DAL TELEFONO";
 const INDIRIZZO_APP = "https://g-iv-ingegneria.github.io/foto-cavalcavia/";
-const VERSIONE_SCRIPT = 2;
+const VERSIONE_SCRIPT = 3;
 
 function doGet(e) {
   const r = radice_();
@@ -36,9 +37,9 @@ function doPost(e) {
     switch (q.a) {
       case "ping": return json_(ping_(radice_()));
       case "ispezione": return json_(ispezione_(q));
-      case "foto": return json_(foto_(q));
-      case "meta": return json_(meta_(q));
-      case "elimina": return json_(elimina_(q));
+      case "foto": return json_(Array.isArray(q.voci) ? fotoArgo_(q) : foto_(q));
+      case "meta": return json_(Array.isArray(q.voci) ? metaArgo_(q) : meta_(q));
+      case "elimina": return json_(eliminaArgo_(q) || elimina_(q));
       case "cartelle": return json_(elencoCartelle_(q));
       case "nuova": return json_(nuovaCartella_(q));
       default: return json_({ ok: false, errore: "azione sconosciuta" });
@@ -91,10 +92,107 @@ function percorso_(f) {
 function ispezione_(q) {
   if (!q.dati || typeof q.dati !== "object") return { ok: false, errore: "dati mancanti" };
   return conLock_(function () {
+    if (q.formato === 3) { const c = cartelleArgo_(q.cartella, q.radice); scriviJson_(c.dati, "_ispezione.json", q.dati); return { ok: true }; }
     const c = cartelle_(q.cartella, q.radice);
     scriviJson_(c.isp, "_ispezione.json", q.dati);
     return { ok: true };
   });
+}
+
+/* ---------------- foto con il nome del difetto (dalla versione 3) ----------------
+   q.voci = [{chiave, prefisso}]: una per difetto della foto; il prefisso arriva gia' calcolato dall'app
+   (come sul PC: PARTE_COMPONENTE_DESCRIZIONE_ID); qui si aggiunge il progressivo _01, _02… del difetto. */
+const CARTELLA_ARGO = "FOTO_PER_ARGO", CARTELLA_DATI = "_dati";
+function cartelleArgo_(nome, radice) {
+  const base = (radice && cartellaScelta_(radice)) || radice_();
+  const isp = sotto_(base, pulisci_(nome, 80) || "senza_ispezione");
+  return { isp: isp, argo: sotto_(isp, CARTELLA_ARGO), dati: sotto_(isp, CARTELLA_DATI) };
+}
+// come il PC (argo_foto.leggi_nome_foto): di quale difetto e' un nome di FOTO_PER_ARGO
+function chiaveNome_(stem) {
+  let m = /^FOTO GENERALI_(\d+)$/i.exec(stem); if (m) return { k: "G", n: +m[1] };
+  m = /^NUOVO DIFETTO_(.+)_(\d+)$/i.exec(stem); if (m) return { k: "N:" + m[1].trim().toLowerCase(), n: +m[2] };
+  m = /^(?:.*_)?(\d+)_(\d+)$/.exec(stem); if (m) return { k: "D:" + m[1], n: +m[2] };
+  return null;
+}
+function prossimoNome_(cartella, prefisso, est) {
+  const p = pulisci_(prefisso, 92) || "FOTO", k = chiaveNome_(p + "_1");
+  let max = 0;
+  const it = cartella.getFiles();
+  while (it.hasNext()) {
+    const f = it.next(); if (f.isTrashed()) continue;
+    const c = chiaveNome_(f.getName().replace(/\.[^.]*$/, ""));
+    if (c && k && c.k === k.k && c.n > max) max = c.n;
+  }
+  const n = max + 1;
+  return p + "_" + (n < 10 ? "0" + n : String(n)) + "." + est;
+}
+function vociValide_(voci) {
+  return (voci || []).filter(function (v) { return v && v.chiave && v.prefisso; }).map(function (v) { return { chiave: String(v.chiave).slice(0, 120), prefisso: String(v.prefisso) }; });
+}
+function leggiJson_(cartella, nome) {
+  const f = primo_(cartella.getFilesByName(nome));
+  if (!f) return null;
+  try { return JSON.parse(f.getBlob().getDataAsString()); } catch (err) { return null; }
+}
+function filePresente_(id) { try { const f = DriveApp.getFileById(id); return f.isTrashed() ? null : f; } catch (err) { return null; } }
+function fotoArgo_(q) {
+  const id = idFoto_(q.id), est = String(q.est || "").toLowerCase();
+  if (!id || !/^[a-z0-9]{1,5}$/.test(est)) return { ok: false, errore: "nome della foto non valido" };
+  if (!q.b64) return { ok: false, errore: "foto mancante" };
+  const voci = vociValide_(q.voci);
+  if (!voci.length) return { ok: false, errore: "foto senza difetto" };
+  const c = conLock_(function () { return cartelleArgo_(q.cartella, q.radice); });
+  const prima = leggiJson_(c.dati, id + ".json");   // gia' arrivata (risposta persa per strada): non la rifaccio
+  if (prima && prima.file && prima.file.length && prima.file.every(function (x) { return filePresente_(x.id); })) return { ok: true, file: prima.file };
+  const dati = Utilities.base64Decode(q.b64);
+  if (q.size && dati.length !== q.size) return { ok: false, errore: "foto arrivata incompleta (" + dati.length + " di " + q.size + " byte)" };
+  const file = conLock_(function () {
+    const out = []; let primoFile = null;
+    voci.forEach(function (v) {
+      const nome = prossimoNome_(c.argo, v.prefisso, est);
+      const f = primoFile ? primoFile.makeCopy(nome, c.argo) : c.argo.createFile(Utilities.newBlob(dati, q.mime || "application/octet-stream", nome));
+      if (!primoFile) primoFile = f;
+      out.push({ chiave: v.chiave, nome: nome, id: f.getId() });
+    });
+    return out;
+  });
+  scriviJson_(c.dati, id + ".json", Object.assign({}, q.meta || {}, { file: file }));
+  return { ok: true, file: file };
+}
+// la foto cambia difetti: prima le copie con i nomi nuovi, poi nel cestino quelle dei difetti tolti
+function metaArgo_(q) {
+  const id = idFoto_(q.id);
+  if (!id) return { ok: false, errore: "foto non valida" };
+  const voci = vociValide_(q.voci);
+  const c = conLock_(function () { return cartelleArgo_(q.cartella, q.radice); });
+  const prima = leggiJson_(c.dati, id + ".json");
+  const vivi = ((prima && prima.file) || []).filter(function (x) { return filePresente_(x.id); });
+  if (!vivi.length) return { ok: false, errore: "foto_mancante" };   // l'app la rimanda intera
+  const file = conLock_(function () {
+    const fonte = filePresente_(vivi[0].id), tieni = [], nuove = [];
+    voci.forEach(function (v) {
+      const g = vivi.filter(function (x) { return x.chiave === v.chiave; })[0];
+      if (g) tieni.push(g);
+      else { const nome = prossimoNome_(c.argo, v.prefisso, String(vivi[0].nome).split(".").pop()); nuove.push({ chiave: v.chiave, nome: nome, id: fonte.makeCopy(nome, c.argo).getId() }); }
+    });
+    if (!voci.length) return vivi;   // nessun difetto: resta com'e'
+    vivi.forEach(function (x) { if (tieni.indexOf(x) < 0) { const f = filePresente_(x.id); if (f) f.setTrashed(true); } });
+    return tieni.concat(nuove);
+  });
+  scriviJson_(c.dati, id + ".json", Object.assign({}, q.meta || {}, { file: file }));
+  return { ok: true, file: file };
+}
+function eliminaArgo_(q) {
+  const id = idFoto_(q.id);
+  if (!id || q.formato !== 3) return null;
+  const c = conLock_(function () { return cartelleArgo_(q.cartella, q.radice); });
+  const prima = leggiJson_(c.dati, id + ".json");
+  let n = 0;
+  ((prima && prima.file) || []).forEach(function (x) { const f = filePresente_(x.id); if (f) { f.setTrashed(true); n++; } });
+  const it = c.dati.getFilesByName(id + ".json");
+  while (it.hasNext()) { it.next().setTrashed(true); n++; }
+  return { ok: true, eliminati: n };
 }
 function foto_(q) {
   const file = nomeFile_(q.file), id = idFoto_(q.id);

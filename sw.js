@@ -1,5 +1,5 @@
 /* Foto Cavalcavia: tiene in memoria la pagina per aprirla anche senza campo. */
-const CACHE = "foto-cavalcavia-17-25-10";
+const CACHE = "foto-cavalcavia-18-25-10";
 const FILE = ["./", "./index.html", "./manifest.webmanifest", "./icona-192.png", "./icona-512.png"];
 
 self.addEventListener("install", (e) => {

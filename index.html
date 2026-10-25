@@ -254,7 +254,7 @@ p.sp { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
    quando c'e' campo. Esporta pacchetti ZIP per il PC (importa_telefono.py).
    ===================================================================== */
 
-const VERSIONE = "17 (25/10)";
+const VERSIONE = "18 (25/10)";
 const LIMITE_PARTE = 180 * 1024 * 1024;     // sotto i 200 MB dell'app Claude per Android
 const LIMITE_ASSET = 20 * 1024 * 1024;
 const TIPI_ONLINE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -391,7 +391,7 @@ async function collegaOnline() {
     if (dalLink) { try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {} }
     disegna();
     if (dalLink && (!S.drive || S.drive.url !== dalLink)) collegaDrive(dalLink);
-    else if (S.drive) sincronizza();
+    else if (S.drive) { sincronizza(); aggiornaInfoDrive(true); }
     return;
   }
   let [db, assets, downloads, user] = await Promise.all([c.use("db"), c.use("assets"), c.use("downloads"), c.use("user")].map((p) => p.catch(() => null)));
@@ -905,6 +905,22 @@ function disegnaCartelle() {
   h += `</div></div>`;
   el.innerHTML = h; el.hidden = false;
   const inp = el.querySelector("#formCartella input"); if (inp) inp.focus();
+}
+// lo script puo' essere stato aggiornato (o la cartella predefinita rinominata) dopo il collegamento: ricontrollo
+let _infoDrive = 0;
+async function aggiornaInfoDrive(forza) {
+  if (!S.drive || navigator.onLine === false || (!forza && Date.now() - _infoDrive < 60000)) return;
+  _infoDrive = Date.now();
+  const url = S.drive.url;
+  try {
+    const j = await chiamaDrive({ a: "ping", radice: "" }, 20000);
+    if (!S.drive || S.drive.url !== url) return;
+    const prima = S.drive.versione || 1;
+    Object.assign(S.drive, { versione: Number(j.versione) || 1, cartella: String(j.cartella || S.drive.cartella || ""), predefinita: String(j.predefinita || ""), proprietario: String(j.proprietario || S.drive.proprietario || "") });
+    scriviDrive(S.drive);
+    if (prima < 2 && S.drive.versione >= 2) mostraToast("<b>Script del Drive aggiornato</b>Ora puoi scegliere la cartella delle foto da Stato dell'app › Cambia cartella.", null, 6000);
+    disegna(); if (S.statoAperto) disegnaStato();
+  } catch (e) {}
 }
 function scollegaDrive() { S.drive = null; S.cart = null; S.cambioDrive = null; scriviDrive(null); S.sync.errore = ""; disegna(); if (S.statoAperto) disegnaStato(); }
 function cartellaDrive(i) { return String((i && (i.cartella || [i.ispezione, i.opera].filter(Boolean).join("_"))) || "senza_ispezione"); }
@@ -1759,7 +1775,7 @@ function htmlHome() {
     `<li><span><b>In campo</b> tocca uno o più difetti e premi <b>Scatta</b>. La foto viene salvata già assegnata, compare accanto al difetto e le spunte si tolgono da sole. Per un'altra foto rispunta il difetto e scatta di nuovo; una foto sbagliata si elimina aprendola.</span></li>` +
     (S.autonoma && S.drive
       ? `<li><span><b>A fine giornata</b> non c'è niente da esportare: ogni foto va da sola nella cartella «${esc(nomeCartellaDrive())}» appena c'è campo. In alto vedi quante mancano. «Esporta per il PC» resta come riserva.</span></li>` +
-        `<li><span><b>Sul PC</b> lancia <b>2_IMPORTA_DAL_TELEFONO</b> e scegli la cartella del Drive: le foto finiscono in <b>FOTO_PER_ARGO</b>, con il nome del difetto.</span></li></ol>`
+        `<li><span><b>Sul PC</b> lancia <b>2_IMPORTA_DAL_DRIVE</b> e scegli la cartella del Drive: le foto finiscono in <b>FOTO_PER_ARGO</b>, con il nome del difetto.</span></li></ol>`
       : S.autonoma
       ? `<li><span><b>A fine giornata</b> premi <b>Esporta per il PC</b> e carica il pacchetto su Drive o OneDrive. Le foto stanno solo su questo telefono: esportale prima di eliminarle.</span></li>`
       : `<li><span><b>A fine giornata</b> premi <b>Esporta per il PC</b> e carica il pacchetto su Drive o OneDrive. In alternativa apri questa stessa app dal browser del PC ed esporta da lì.</span></li>`) +
@@ -2125,7 +2141,7 @@ function chiudiIspezione() { S.aperta = null; S.sel.clear(); disegna(); try { lo
 function chiudiFoglio() { S.dettaglio = null; S.esp = null; S.gest = null; S.statoAperto = false; S.cart = null; S.cambioDrive = null; $("#foglio").hidden = true; disegna(); }
 
 /* ---------------- pagina «Stato dell'app»: cosa c'e' su questo dispositivo e cosa online ---------------- */
-function apriStato() { S.statoAperto = true; disegnaStato(); }
+function apriStato() { S.statoAperto = true; disegnaStato(); if (S.drive && S.autonoma) aggiornaInfoDrive(); }
 function disegnaStato() {
   const el = $("#foglio"); if (!S.statoAperto) return;
   const st = statoSync();

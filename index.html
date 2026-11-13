@@ -143,6 +143,11 @@ h2.sez:first-child { margin-top: 4px; }
 .g-testa .gc { font: 500 13px/1 var(--f-mono); color: var(--muted); }
 .g-testa .fr { color: var(--muted); width: 16px; text-align: center; }
 .gruppo.chiuso .g-testa { border-bottom: 0; }
+.gruppo.completa { border-color: var(--ok); }
+.gruppo.completa .g-testa { background: var(--ok-weak); }
+.gruppo.completa .g-testa .gn, .gruppo.completa .g-testa .gc, .gruppo.completa .g-testa .fr { color: var(--ok); }
+.gruppo.completa .g-testa .gc { font-weight: 700; }
+.tendine { display: flex; justify-content: flex-end; margin: -4px 0 6px; }
 .comp { display: flex; align-items: center; gap: 8px; padding: 10px 12px 4px; }
 .comp .cn { flex: 1; font: 600 13px/1.2 var(--f-disp); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .comp .tutti { border: 0; background: none; color: var(--sel); font: 600 13px/1 var(--f-disp); padding: 6px 0 6px 8px; }
@@ -180,6 +185,9 @@ h2.sez:first-child { margin-top: 4px; }
 .barra .info { display: flex; align-items: center; gap: 8px; min-height: 28px; font-size: 13.5px; color: var(--muted); margin-bottom: 8px; }
 .barra .info .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .barra .info b { color: var(--ink); }
+.barra .info.sost b { color: var(--warn); }
+.sost-foto { display: grid; gap: 6px; }
+.sost-foto .sp { margin: 0; font-size: 13px; color: var(--muted); }
 .barra .info .x { flex: none; border: 1px solid var(--line); background: var(--surface-2); border-radius: 999px; padding: 4px 10px; font-size: 13px; }
 .barra .az { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
 .scatta { min-height: 58px; border-radius: 12px; border: 0; background: var(--hivis); color: var(--hivis-ink); font: 700 19px/1 var(--f-disp); letter-spacing: .02em; display: inline-flex; align-items: center; justify-content: center; gap: 10px; }
@@ -189,7 +197,8 @@ h2.sez:first-child { margin-top: 4px; }
 input.nascosto { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 
 /* ---------- avvisi temporanei ---------- */
-.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--barra-h) + env(safe-area-inset-bottom, 0px) + 12px); z-index: 40; background: var(--head); color: var(--head-ink); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+.toast { position: fixed; left: max(16px, env(safe-area-inset-left, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--barra-h) + env(safe-area-inset-bottom, 0px) + 12px); z-index: 40; background: var(--head); color: var(--head-ink); border-radius: 12px; padding: 10px; display: flex; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.25); pointer-events: none; }   /* i tocchi passano all'elenco sotto: nessun tocco perso mentre il messaggio è visibile */
+.toast button { pointer-events: auto; }
 .toast img { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; flex: none; background: #333; }
 .toast .t { flex: 1; min-width: 0; font-size: 14px; }
 .toast .t b { display: block; font-weight: 600; }
@@ -254,7 +263,7 @@ p.sp { margin: 0 0 12px; font-size: 14px; color: var(--muted); }
    quando c'e' campo. Esporta pacchetti ZIP per il PC (importa_telefono.py).
    ===================================================================== */
 
-const VERSIONE = "19 (25/10)";
+const VERSIONE = "20 (13/11)";
 const LIMITE_PARTE = 180 * 1024 * 1024;     // sotto i 200 MB dell'app Claude per Android
 const LIMITE_ASSET = 20 * 1024 * 1024;
 const TIPI_ONLINE = ["image/jpeg", "image/png", "image/webp", "image/gif"];
@@ -268,7 +277,8 @@ const S = {
   sel: new Set(),        // chiavi destinazione selezionate
   cerca: "",
   soloSenza: false,
-  chiusi: new Set(),
+  aperti: new Set(),     // parti d'opera aperte nell'elenco: all'apertura dell'ispezione sono tutte chiuse
+  sostituisci: null,     // { vecchia, chiave }: le prossime foto prendono il posto di quella foto, solo per quel difetto
   locale: true,          // IndexedDB disponibile
   cap: { db: null, assets: null, downloads: null },
   cloud: "attesa",       // attesa | ok | assente
@@ -295,6 +305,23 @@ function nomeCartella(testo, max = 60) {
   s = s.slice(0, max).replace(/[ .]+$/, "");
   return s || "SENZA_NOME";
 }
+// numero del cavalcavia: quello tra parentesi in fondo alla DENOMINAZIONE OPERA GLOBALE di ARGO
+// («CAV. S.C. MERETO (108)» -> 108, «(41bis)» -> 41bis, «SOTTOVIA A01 (cav 3)» -> 3)
+function numeroOpera(globale) {
+  const m = /\(([^()]*)\)\s*$/.exec(String(globale || "").trim());
+  const n = m && /(\d+[a-z]*)\s*$/i.exec(m[1]);
+  return n ? n[1] : "";
+}
+// nome dell'opera parziale con il numero del cavalcavia prima della carreggiata finale:
+// «CAV. S.C. MERETO E» -> «CAV. S.C. MERETO (108) E»; se il numero c'è già (es. «... (22) -E») resta com'è
+function operaConNumero(opera, globale) {
+  const o = String(opera || "").replace(/\s+/g, " ").trim(), n = numeroOpera(globale);
+  if (!n || !o) return o;
+  if (o.replace(/\s+/g, "").toLowerCase().includes("(" + n.toLowerCase() + ")")) return o;
+  const m = /^(.*\S)\s+(-?(?:\d+-)?[A-Z])$/.exec(o);
+  return m ? `${m[1]} (${n}) ${m[2]}` : `${o} (${n})`;
+}
+function nomeOpera(i) { return (i && (operaConNumero(i.opera, i.globale) || i.cartella)) || ""; }
 function naturale(a, b) { return String(a).localeCompare(String(b), "it", { numeric: true, sensitivity: "base" }); }
 function nuovoId() { return "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function pad(n, l = 2) { return String(n).padStart(l, "0"); }
@@ -362,6 +389,7 @@ function fotoPerCloud(f) {
 }
 function ispPerCloud(i) {
   const doc = { ispezione: i.ispezione, opera: i.opera, cartella: i.cartella, difetti: i.difetti, nuovi: i.nuovi || [], aggiornata: i.aggiornata || new Date().toISOString() };
+  if (i.globale) doc.globale = i.globale;
   if (i.prec) doc.prec = i.prec;   // foto dell'ultima ispezione: { caricato, odl, data, file, n, foto: { difetto: [asset, dataFoto, idFoto, ispezione] } }
   if (JSON.stringify(doc).length > 240000) doc.difetti = i.difetti.map(({ note, ...resto }) => resto);
   return doc;
@@ -944,7 +972,35 @@ function prefissoFoto(chiave, isp, max = MAX_PREFISSO) {
 }
 function vociFoto(f, i) { return (f.dest || []).map((k) => ({ chiave: k, prefisso: prefissoFoto(k, i) })); }
 const nomiArgo = () => !!S.drive && (S.drive.versione || 1) >= 3;
-function ispPerDrive(i) { return { formato: "argo-foto-drive", versione: 1, ispezione: i.ispezione || "", opera: i.opera || "", cartella: i.cartella || "", difetti: i.difetti || [], nuovi: i.nuovi || [] }; }
+function ispPerDrive(i) {
+  const d = { formato: "argo-foto-drive", versione: 1, ispezione: i.ispezione || "", opera: i.opera || "", cartella: i.cartella || "", difetti: i.difetti || [], nuovi: i.nuovi || [] };
+  if (i.globale) d.globale = i.globale;
+  return d;
+}
+/* Un'ispezione gia' sul Drive (caricata da un altro telefono, o col nome della cartella di prima della versione 20)
+   si ritrova dal numero d'ispezione: se da questo telefono non e' ancora partita nessuna foto, si usa la cartella
+   che c'e' gia', cosi' le foto della stessa ispezione restano in una cartella sola. */
+async function adottaCartellaDrive(i) {
+  const chiave = chiaveDrive(), num = String(i.ispezione || "");
+  if (!num || i.driveCercata === chiave || (S.drive.versione || 1) < 2) return;
+  const radice = (S.drive.radice && S.drive.radice.id) || "";
+  const partite = [...S.foto.values()].some((f) => f.isp === i.id && f.drive && f.driveUrl === S.drive.url && (f.driveRadice || "") === radice);
+  const dentro = radice || S.drive.predefinita || "";
+  if (!partite && dentro) {
+    const j = await chiamaDrive({ a: "cartelle", dentro });
+    const pulito = (s) => String(s || "").replace(/[\\/:*?"<>|\u0000-\u001f]/g, "-").replace(/\s+/g, " ").trim().replace(/[. ]+$/, "").slice(0, 80).toLowerCase();
+    // stessa opera = stesso nome a meno del numero del cavalcavia «(108)»: un'altra opera con lo stesso numero d'ispezione non si prende mai
+    const base = (s) => pulito(s).replace(/\s*\(\s*\d+[a-z]*\s*\)/g, "").replace(/\s+/g, " ").trim();
+    const mia = pulito(cartellaDrive(i)), miaBase = base(cartellaDrive(i));
+    const cand = (j.cartelle || []).map((c) => String(c.nome || "")).filter((n) => n.split("_")[0] === num);
+    if (!cand.some((n) => pulito(n) === mia)) {
+      const scelta = cand.find((n) => base(n) === miaBase);
+      if (scelta) i.cartella = scelta;
+    }
+    if ((j.cartelle || []).length >= 300) return;   // elenco incompleto (lo script ne manda al massimo 300): si riprova al prossimo giro
+  }
+  if (S.isp.get(i.id) === i) { i.driveCercata = chiave; await lPut("ispezioni", i); }
+}
 function chiaveDrive() { return S.drive ? S.drive.url + "|" + ((S.drive.radice && S.drive.radice.id) || "") + (nomiArgo() ? "|3" : "") : ""; }
 function ispFattaDrive(i) { return !!S.drive && i.driveFatto === chiaveDrive() + "|" + hashTesto(JSON.stringify(ispPerDrive(i))); }
 function metaDrive(f, i, nome) { return { formato: "argo-foto-drive", versione: 1, id: f.id, nome, scattata: f.scattata || "", dest: f.dest || [], ispezione: (i && i.ispezione) || f.isp || "", dispositivo: idDispositivo() }; }
@@ -986,6 +1042,7 @@ async function sincronizzaDrive() {
   try {
     for (const i of [...S.isp.values()]) {
       if (i.sync === "del" || ispFattaDrive(i)) continue;
+      await adottaCartellaDrive(i);
       const dati = ispPerDrive(i), testo = JSON.stringify(dati);
       await chiamaDrive({ a: "ispezione", formato: nomiArgo() ? 3 : undefined, cartella: cartellaDrive(i), dati });
       if (S.isp.get(i.id) === i && S.drive && S.drive.url === url) { i.driveFatto = chiaveDrive() + "|" + hashTesto(testo); await lPut("ispezioni", i); }
@@ -1133,6 +1190,7 @@ function righeCsv(testo) {
 const COL = {
   ispezione: ["ULTIMA ISPEZIONE", "ISPEZIONE"],
   opera: ["DENOMINAZIONE OPERA PARZIALE", "OPERA"],
+  globale: ["DENOMINAZIONE OPERA GLOBALE"],
   parte: ["DENOMINAZIONE PARTE D'OPERA", "PARTE D'OPERA"],
   componente: ["DENOMINAZIONE COMPONENTE", "COMPONENTE"],
   id: ["ID DIFETTO"],
@@ -1162,10 +1220,12 @@ function difettiDaRighe(righe, nomeFile) {
   if (!visti.size) throw new Error("Il file non contiene difetti.");
   return [...gruppi.entries()].map(([chiave, lista]) => {
     const [ispezione, opera] = chiave.split("|");
+    const globale = (lista.find((d) => d.globale) || {}).globale || "";
     lista.sort((a, b) => naturale(a.parte, b.parte) || naturale(a.componente, b.componente) || naturale(a.id, b.id));
-    const difetti = lista.map(({ ispezione, opera, ...resto }) => resto);
+    const difetti = lista.map(({ ispezione, opera, globale, ...resto }) => resto);
     const base = ispezione || nomeFile.replace(/\.[^.]+$/, "");
-    return { ispezione, opera, cartella: nomeCartella((ispezione ? ispezione + "_" : "") + (opera || base), 80), difetti };
+    // cartella: «63050_CAV. S.C. MERETO (108) E», con il numero del cavalcavia (dalla versione 20)
+    return { ispezione, opera, globale, cartella: nomeCartella((ispezione ? ispezione + "_" : "") + (operaConNumero(opera, globale) || base), 80), difetti };
   });
 }
 async function importaElenco(file) {
@@ -1183,7 +1243,9 @@ async function importaElenco(file) {
       const giaAltra = S.isp.get(id) && S.isp.get(id).sync !== "del" && S.isp.get(id).opera && g.opera && S.isp.get(id).opera !== g.opera;
       if (doppia || giaAltra) id = pulisciId(g.ispezione + "_" + nomeCartella(g.opera, 60));
       const vecchia = S.isp.get(id);
-      const isp = Object.assign({ id, nuovi: [] }, vecchia || {}, g, { nuovi: (vecchia && vecchia.nuovi) || [], aggiornata: new Date().toISOString(), sync: "mod" });
+      // un'ispezione gia' sul telefono tiene la sua cartella (anche col nome di prima, senza numero): le foto nuove non vanno in una seconda cartella
+      const isp = Object.assign({ id, nuovi: [] }, vecchia || {}, g, { nuovi: (vecchia && vecchia.nuovi) || [], aggiornata: new Date().toISOString(), sync: "mod",
+        cartella: (vecchia && vecchia.cartella) || g.cartella, globale: g.globale || (vecchia && vecchia.globale) || "" });
       S.isp.set(id, isp); await lPut("ispezioni", isp); ultima = id;
     }
     mostraToast(`<b>${gruppi.length === 1 ? "Ispezione caricata" : gruppi.length + " ispezioni caricate"}</b>${gruppi.reduce((n, g) => n + g.difetti.length, 0)} difetti`);
@@ -1615,14 +1677,42 @@ async function salvaFoto(file, daCamera) {
   await lPut("foto", fotoPerLocale(f));
   return f;
 }
+/* ---------------- sostituisci foto, per un solo difetto ----------------
+   Dalla foto aperta da un difetto: le foto nuove prendono il posto di quella vecchia solo per quel difetto.
+   Se la vecchia era anche su altri difetti, li' resta; altrimenti si elimina (sul Drive va nel cestino, quindi
+   in FOTO_PER_ARGO la foto nuova e' quella col numero piu' basso e va in ARGO). */
+function modoSostituisci() {
+  const s = S.sostituisci;
+  if (s && !(S.sel.size === 1 && S.sel.has(s.chiave))) S.sostituisci = null;   // spunte cambiate: si torna allo scatto normale
+  return S.sostituisci;
+}
+// esito: null (la vecchia non c'e' piu') | { altri: difetti su cui resta la vecchia, ok: false se la modifica online non e' riuscita }
+async function sostituisciFoto(sost) {
+  const v = S.foto.get(sost.vecchia);
+  if (!v || v.sync === "del" || !v.dest.includes(sost.chiave)) return null;
+  const altri = v.dest.length - 1;
+  if (altri) return { altri, ok: await cambiaDest(v.id, v.dest.filter((k) => k !== sost.chiave)) !== false };
+  await eliminaFoto(v.id, true);
+  return { altri: 0, ok: true };
+}
 async function suScatto(input, daCamera) {
   const files = [...(input.files || [])];
   input.value = "";
-  if (!files.length) return;
+  if (!files.length) return;   // scatto annullato: se si stava sostituendo, la barra lo ricorda (Scatta / Dalla galleria / Annulla)
+  const sost = modoSostituisci(); S.sostituisci = null;
   const salvate = [];
   for (const file of files) { const f = await salvaFoto(file, daCamera); if (f) salvate.push(f); }
   if (!salvate.length) { mostraToast("<b>Foto non salvata</b>Nessun difetto spuntato: spunta prima uno o più difetti e poi scatta.", null, 5000); return; }
   vibra();
+  if (sost && salvate.every((f) => f.dest.length === 1 && f.dest[0] === sost.chiave)) {
+    const r = await sostituisciFoto(sost);
+    S.sel.clear();
+    if (r && !r.ok) mostraToast("<b>Foto aggiunta, ma la modifica di quella di prima non è salvata online</b>Serve la connessione: quando torna la rete ricontrolla il difetto.", salvate[0], 6000);
+    else if (r) mostraToast(`<b>Foto sostituita</b>${r.altri ? `${r.altri === 1 ? "Sull'altro difetto" : "Sugli altri " + r.altri + " difetti"} resta quella di prima.` : "Quella di prima è eliminata."}`, salvate[0], 3000);
+    disegna(); sincronizza();
+    if (daCamera && galleriaAttiva() && puoiSalvare()) copiaInGalleria(salvate.map((f) => f.id));
+    return;
+  }
   // dopo lo scatto le spunte si tolgono da sole e non esce nessun messaggio: la foto compare accanto al difetto.
   // Per un'altra foto si rispunta il difetto; una foto sbagliata si elimina aprendola.
   S.sel.clear();
@@ -1686,7 +1776,8 @@ async function cambiaDest(id, dest) {
   const f = S.foto.get(id); if (!f) return;
   f.dest = dest;
   if (f.locale) { if (f.sync === "ok") f.sync = "mod"; await lPut("foto", fotoPerLocale(f)); sincronizza(); }
-  else if (S.cap.db) { try { await S.cap.db.doc(S.base + "foto/" + id).update({ dest }); } catch (e) { mostraToast("<b>Modifica non salvata</b>Serve la connessione per modificare questa foto."); } }
+  else if (S.cap.db) { try { await S.cap.db.doc(S.base + "foto/" + id).update({ dest }); } catch (e) { mostraToast("<b>Modifica non salvata</b>Serve la connessione per modificare questa foto."); return false; } }
+  return true;
 }
 
 /* ---------------- calcoli ---------------- */
@@ -1741,7 +1832,7 @@ function disegnaTesta() {
   const st = statoSync();
   $("#testa").innerHTML =
     (isp ? `<button class="indietro" id="btnIndietro" aria-label="Torna alle ispezioni">&#8249;</button>` : "") +
-    `<div class="testa-tit"><div class="app">${isp ? esc(isp.opera || isp.cartella) : S.autonoma ? "Foto Cavalcavia" : "Foto ARGO"}</div>` +
+    `<div class="testa-tit"><div class="app">${isp ? esc(nomeOpera(isp)) : S.autonoma ? "Foto Cavalcavia" : "Foto ARGO"}</div>` +
     `<div class="sub">${isp ? "Ispezione " + esc(isp.ispezione || "-") : "Foto dei difetti in campo"}</div></div>` +
     `<button class="pill ${st.cl}" id="btnStato"><span class="pt"></span>${esc(st.t)}</button>`;
 }
@@ -1792,7 +1883,7 @@ function htmlHome() {
       const c = conteggi(i.id), foto = fotoDi(i.id);
       const con = i.difetti.filter((d) => c.get(d.id)).length, tot = i.difetti.length;
       const nonEsp = foto.filter((f) => !alSicuro(f)).length;
-      h += `<button class="card-isp" data-apri="${esc(i.id)}"><div class="nome">${esc(i.opera || i.cartella)}</div>` +
+      h += `<button class="card-isp" data-apri="${esc(i.id)}"><div class="nome">${esc(nomeOpera(i))}</div>` +
         `<div class="meta">Ispezione ${esc(i.ispezione || "-")} · ${tot} difetti · ${foto.length} foto${nonEsp ? ` · <b>${nonEsp} ${S.drive ? "da salvare su Drive" : "da esportare"}</b>` : ""}</div>` +
         `<div class="barra-prog"><i style="width:${tot ? Math.round((con / tot) * 100) : 0}%"></i></div>` +
         `<div class="riga-prog"><span>Difetti con foto</span><span><b>${con}</b> / ${tot}</span></div></button>`;
@@ -1804,7 +1895,7 @@ function htmlHome() {
   if (puoiSalvare()) h += `<div class="opz" style="margin-top:12px"><label><input type="checkbox" id="optGalleria" ${galleriaAttiva() ? "checked" : ""}><span><b>Copia le foto scattate anche nella galleria</b><br>Dopo ogni scatto il telefono chiede di salvarne una copia: la trovi nella galleria, album «Download».</span></label></div>`;
   h += `<h2 class="sez">Come funziona</h2><ol class="passi">` +
     `<li><span><b>Prima di partire</b>, aggiungi l'ispezione scegliendo il report di ARGO o il file <b>_elenco_difetti.csv</b> (anche da Drive o OneDrive). Se scegli insieme anche il PDF <b>FOTO ultima ispezione</b>, accanto a ogni difetto vedi la foto precedente, finché non ne scatti una nuova. Basta caricarlo una volta, anche dal PC: arriva da solo sugli altri dispositivi.</span></li>` +
-    `<li><span><b>In campo</b> tocca uno o più difetti e premi <b>Scatta</b>. La foto viene salvata già assegnata, compare accanto al difetto e le spunte si tolgono da sole. Per un'altra foto rispunta il difetto e scatta di nuovo; una foto sbagliata si elimina aprendola.</span></li>` +
+    `<li><span><b>In campo</b> tocca uno o più difetti e premi <b>Scatta</b>. La foto viene salvata già assegnata, compare accanto al difetto e le spunte si tolgono da sole. Per un'altra foto rispunta il difetto e scatta di nuovo. Una foto sbagliata si apre toccandola: da lì la sostituisci (solo per quel difetto) o la elimini.</span></li>` +
     (S.autonoma && S.drive
       ? `<li><span><b>A fine giornata</b> non c'è niente da esportare: ogni foto va da sola nella cartella «${esc(nomeCartellaDrive())}» appena c'è campo. In alto vedi quante mancano. «Esporta per il PC» resta come riserva.</span></li>` +
         `<li><span><b>Sul PC</b> lancia <b>2_IMPORTA_DAL_DRIVE</b> e scegli la cartella del Drive: le foto finiscono in <b>FOTO_PER_ARGO</b>, con il nome del difetto.</span></li></ol>`
@@ -1859,11 +1950,18 @@ function htmlElenco(isp) {
     g.get(d.componente).push(d);
   }
   if (!gruppi.size) h += `<div class="niente">${parole.length ? "Nessun difetto corrisponde alla ricerca." : "Tutti i difetti hanno almeno una foto."}</div>`;
+  // le parti d'opera partono chiuse; con la ricerca si aprono da sole quelle che corrispondono
+  else if (!parole.length) {
+    const tutteAperte = [...gruppi.keys()].every((p) => S.aperti.has(p));
+    h += `<div class="tendine"><button class="link" id="btnTendine" data-tutte="${tutteAperte ? "chiudi" : "apri"}">${tutteAperte ? "Chiudi tutte" : "Apri tutte"}</button></div>`;
+  }
   for (const [parte, comps] of gruppi) {
     const tutti = destinazioni(isp).filter((d) => d.parte === parte && d.genere === "difetto");
-    const chiuso = S.chiusi.has(parte) && !parole.length;
-    const cnt = parte === "ALTRO" ? "" : `${tutti.filter((d) => c.get(d.key)).length}/${tutti.length}`;
-    h += `<section class="gruppo${chiuso ? " chiuso" : ""}"><button class="g-testa" data-parte="${esc(parte)}" aria-expanded="${!chiuso}"><span class="fr">${chiuso ? "&#9656;" : "&#9662;"}</span><span class="gn">${esc(parte)}</span><span class="gc">${cnt}</span></button>`;
+    const chiuso = !S.aperti.has(parte) && !parole.length;
+    const fatti = tutti.filter((d) => c.get(d.key)).length;
+    const completa = parte !== "ALTRO" && tutti.length > 0 && fatti === tutti.length;   // ogni difetto ha almeno una foto: parte verde
+    const cnt = parte === "ALTRO" ? "" : `${completa ? "&#10003; " : ""}${fatti}/${tutti.length}`;
+    h += `<section class="gruppo${chiuso ? " chiuso" : ""}${completa ? " completa" : ""}"><button class="g-testa" data-parte="${esc(parte)}" aria-expanded="${!chiuso}"><span class="fr">${chiuso ? "&#9656;" : "&#9662;"}</span><span class="gn">${esc(parte)}</span><span class="gc">${cnt}</span></button>`;
     if (!chiuso) {
       for (const [comp, lista] of comps) {
         if (comp) {
@@ -1873,7 +1971,7 @@ function htmlElenco(isp) {
         for (const d of lista) {
           const n = c.get(d.key) || 0, on = S.sel.has(d.key), pr = d.genere === "difetto" && precDi(isp.id, d.key), mia = ult.get(d.key);
           // a fianco del difetto: l'ultima foto scattata; se non ce ne sono, quella dell'ultima ispezione
-          const pv = mia ? `<span class="pv mia" data-foto="${esc(mia.id)}" title="Ultima foto scattata"><img src="${esc(urlMini(mia))}" alt="" loading="lazy" decoding="async"></span>`
+          const pv = mia ? `<span class="pv mia" data-foto="${esc(mia.id)}" data-chiave="${esc(d.key)}" title="Ultima foto scattata"><img src="${esc(urlMini(mia))}" alt="" loading="lazy" decoding="async"></span>`
             : pr ? `<span class="pv" data-prec="${esc(d.key)}" title="Foto dell'ultima ispezione"><img src="${esc(urlPrec(pr))}" alt="" loading="lazy" decoding="async"></span>` : "";
           h += `<button class="dif" data-key="${esc(d.key)}" aria-pressed="${on}"><span class="ck">&#10003;</span>` +
             `<span class="tx">${d.genere === "difetto" ? `<span class="id">${esc(d.id)}</span>` : ""}<span class="ds">${esc(d.descrizione)}</span>${d.note ? `<span class="nt">${esc(d.note)}</span>` : ""}</span>` +
@@ -1893,9 +1991,10 @@ function disegnaBarra() {
   const isp = S.isp.get(S.aperta);
   if (!isp) { b.hidden = true; return; }
   b.hidden = false;
-  const n = S.sel.size;
+  const n = S.sel.size, sost = modoSostituisci();
   const nomi = [...S.sel].map((k) => etichetta(isp, k));
-  b.innerHTML = `<div class="info">${n ? `<span class="t"><b>${n === 1 ? "1 difetto" : n + " difetti"}</b>: ${esc(nomi.join(" · "))}</span><button class="x" id="btnDesel">Deseleziona</button>` : `<span class="t">Tocca uno o più difetti, poi scatta</span>`}</div>` +
+  b.innerHTML = `<div class="info${sost ? " sost" : ""}">${sost ? `<span class="t"><b>Sostituisci la foto</b>: ${esc(nomi.join(" · "))}</span><button class="x" id="btnDesel">Annulla</button>`
+    : n ? `<span class="t"><b>${n === 1 ? "1 difetto" : n + " difetti"}</b>: ${esc(nomi.join(" · "))}</span><button class="x" id="btnDesel">Deseleziona</button>` : `<span class="t">Tocca uno o più difetti, poi scatta</span>`}</div>` +
     `<div class="az"><button class="galleria" id="btnGalleria" ${n ? "" : "disabled"}>Dalla galleria</button>` +
     `<button class="scatta" id="btnScatta" ${n ? "" : "disabled"}><svg class="ico-cam" viewBox="0 0 26 22" aria-hidden="true"><path fill="currentColor" d="M9 1h8l2 3h4a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h4z"/><circle cx="13" cy="12" r="5" fill="var(--hivis)"/><circle cx="13" cy="12" r="3" fill="currentColor"/></svg>Scatta</button></div>`;
 }
@@ -1930,13 +2029,13 @@ function disegnaDettaglio() {
   const pr = precDi(isp.id, key);
   if (pr) h += `<button class="prec-foto" data-prec="${esc(key)}"><img src="${esc(urlPrec(pr))}" alt="Foto dell'ultima ispezione"><span class="st">Ultima ispezione${pr.dataFoto ? " · " + esc(pr.dataFoto) : ""}</span></button>`;
   h += `<div style="display:flex;gap:8px;margin-bottom:14px"><button class="btn prim" style="flex:1" id="scattaQui">Scatta per questo difetto</button></div>`;
-  h += foto.length ? `<div class="griglia">${foto.map((f) => `<button class="miniatura" data-foto="${esc(f.id)}"><img src="${esc(urlMini(f))}" alt="" loading="lazy"><span class="st">${esc(oraBreve(f.scattata))}</span></button>`).join("")}</div>` : `<p class="sp">Ancora nessuna foto per questo difetto.</p>`;
+  h += foto.length ? `<div class="griglia">${foto.map((f) => `<button class="miniatura" data-foto="${esc(f.id)}" data-chiave="${esc(key)}"><img src="${esc(urlMini(f))}" alt="" loading="lazy"><span class="st">${esc(oraBreve(f.scattata))}</span></button>`).join("")}</div>` : `<p class="sp">Ancora nessuna foto per questo difetto.</p>`;
   h += `</div></div>`;
   el.innerHTML = h; el.hidden = false;
 }
 
 /* ---------------- foto a schermo intero ---------------- */
-function apriFoto(id) { S.vista = { id, conferma: false }; disegnaFotoGrande(); }
+function apriFoto(id, chiave) { S.vista = { id, conferma: false, chiave: chiave || "" }; disegnaFotoGrande(); }
 function disegnaFotoGrande() {
   const el = $("#vistaFoto"), v = S.vista;
   const f = v && S.foto.get(v.id);
@@ -1948,7 +2047,11 @@ function disegnaFotoGrande() {
   h += `<ul class="dest-lista">${f.dest.map((k) => `<li><span>${esc(isp ? etichettaLunga(isp, k) : k)}</span>${f.dest.length > 1 ? `<button class="btn picc" data-togli="${esc(k)}">Togli</button>` : ""}</li>`).join("")}</ul>`;
   h += v.conferma
     ? `<div class="conferma"><b>Eliminare questa foto?</b><span>Sparisce da tutti i difetti, dal telefono e dallo spazio online. Non si può annullare.</span><div class="bt"><button class="btn picc peric" id="eliminaSi">Elimina</button><button class="btn picc" id="eliminaNo">Annulla</button></div></div>`
-    : `<div style="display:flex;gap:8px;flex-wrap:wrap">${puoiSalvare() ? `<button class="btn picc" id="galleriaFoto" ${f.galleria || _codaGalleria.includes(f.id) ? "disabled" : ""}>${f.galleria ? "Già nella galleria" : "Copia nella galleria"}</button>` : ""}<button class="btn peric picc" id="eliminaFoto">Elimina foto</button></div>`;
+    : (v.chiave && isp && f.dest.includes(v.chiave)
+      ? `<div class="sost-foto"><button class="btn prim blocco" id="sostituisci">${f.dest.length > 1 ? "Sostituisci per questo difetto" : "Sostituisci foto"}</button>` +
+        `<span class="sp">${f.dest.length > 1 ? `Solo per ${esc(etichetta(isp, v.chiave))}: ${f.dest.length - 1 === 1 ? "sull'altro difetto" : "sugli altri " + (f.dest.length - 1) + " difetti"} resta questa.` : "Si apre la fotocamera: la foto nuova prende il posto di questa."}` +
+        `${(() => { const n = fotoDi(f.isp).filter((x) => x.dest.includes(v.chiave)).length; return n > 1 ? ` Il difetto ha ${n} foto e in ARGO va quella col numero più basso: elimina quelle che non servono.` : ""; })()}</span></div>` : "") +
+      `<div style="display:flex;gap:8px;flex-wrap:wrap">${puoiSalvare() ? `<button class="btn picc" id="galleriaFoto" ${f.galleria || _codaGalleria.includes(f.id) ? "disabled" : ""}>${f.galleria ? "Già nella galleria" : "Copia nella galleria"}</button>` : ""}<button class="btn peric picc" id="eliminaFoto">Elimina foto</button></div>`;
   h += `</div></div>`;
   el.innerHTML = h; el.hidden = false;
 }
@@ -1962,7 +2065,7 @@ function disegnaEsporta() {
   if (e.quali == null) e.quali = nuove.length ? "nuove" : "tutte";
   const scelte = e.quali === "nuove" ? nuove : foto;
   const peso = scelte.reduce((s, f) => s + (f.size || 0), 0);
-  let h = `<div class="f-testa"><div class="testa-in gutter contenuto"><button class="indietro" id="chiudiFoglio" aria-label="Chiudi">&#8249;</button><div class="testa-tit"><div class="app">Esporta per il PC</div><div class="sub">${esc(isp.opera || isp.cartella)}</div></div></div></div><div class="f-corpo gutter"><div class="contenuto">`;
+  let h = `<div class="f-testa"><div class="testa-in gutter contenuto"><button class="indietro" id="chiudiFoglio" aria-label="Chiudi">&#8249;</button><div class="testa-tit"><div class="app">Esporta per il PC</div><div class="sub">${esc(nomeOpera(isp))}</div></div></div></div><div class="f-corpo gutter"><div class="contenuto">`;
   if (!e.parti) {
     h += `<p class="sp">Crea un pacchetto con le foto già assegnate ai difetti. Sul PC trascinalo su <b>2_IMPORTA_DAL_TELEFONO</b>: ogni foto finisce nella cartella del suo difetto.</p>`;
     h += `<div class="opz"><label><input type="radio" name="quali" value="nuove" ${e.quali === "nuove" ? "checked" : ""} ${nuove.length ? "" : "disabled"}><span><b>Solo le foto nuove</b><br>${nuove.length} foto non ancora esportate</span></label>` +
@@ -2123,7 +2226,7 @@ function disegnaGestione() {
   for (const i of lista) {
     const foto = fotoDi(i.id), nonEsp = foto.filter((f) => !alSicuro(f)).length, p = precDi(i.id);
     const c = conteggi(i.id), con = i.difetti.filter((d) => c.get(d.id)).length;
-    h += `<div class="gest-isp"><div class="nome">${esc(i.opera || i.cartella)}</div><div class="meta">` +
+    h += `<div class="gest-isp"><div class="nome">${esc(nomeOpera(i))}</div><div class="meta">` +
       `<span>Ispezione <b>${esc(i.ispezione || "-")}</b> · ${i.difetti.length} difetti${i.aggiornata ? ` · caricata il ${esc(dataBreve(i.aggiornata))}` : ""}</span>` +
       `<span><b>${foto.length}</b> ${foto.length === 1 ? "foto scattata" : "foto scattate"} · ${con} ${con === 1 ? "difetto" : "difetti"} con foto${nonEsp ? ` · <span class="att">${nonEsp} ${S.drive ? "non ancora su Drive" : "non esportate"}</span>` : foto.length ? (S.drive ? " · tutte su Drive" : " · tutte esportate") : ""}</span>` +
       (p && p.info ? `<span>Foto ultima ispezione: ${quantePrec(i)} di ${i.difetti.length} difetti</span>` : "") + `</div>`;
@@ -2144,7 +2247,7 @@ function disegnaGestione() {
 }
 async function eliminaIspezione(id) {
   const isp = S.isp.get(id); if (!isp) return;
-  const nome = isp.opera || isp.cartella;
+  const nome = nomeOpera(isp);
   if (S.drive && S.autonoma) {   // col Drive si toglie solo dal telefono: sul Drive resta tutto
     for (const f of [...S.foto.values()]) if (f.isp === id) { S.foto.delete(f.id); await lDel("foto", f.id); liberaMini(f.id); }
   } else for (const f of [...S.foto.values()]) if (f.isp === id && f.sync !== "del") await eliminaFoto(f.id, true);
@@ -2168,7 +2271,7 @@ async function eliminaIspezione(id) {
 }
 
 /* ---------------- navigazione ---------------- */
-function apriIspezione(id) { S.aperta = id; S.sel.clear(); S.cerca = ""; S.soloSenza = false; window.scrollTo(0, 0); disegna(); try { localStorage.setItem("argo-aperta", id); } catch (e) {} }
+function apriIspezione(id) { S.aperta = id; S.sel.clear(); S.sostituisci = null; S.aperti.clear(); S.cerca = ""; S.soloSenza = false; window.scrollTo(0, 0); disegna(); try { localStorage.setItem("argo-aperta", id); } catch (e) {} }
 function chiudiIspezione() { S.aperta = null; S.sel.clear(); disegna(); try { localStorage.removeItem("argo-aperta"); } catch (e) {} }
 function chiudiFoglio() { S.dettaglio = null; S.esp = null; S.gest = null; S.statoAperto = false; S.cart = null; S.cambioDrive = null; $("#foglio").hidden = true; disegna(); }
 
@@ -2270,7 +2373,7 @@ document.addEventListener("click", async (ev) => {
   // foto dell'ultima ispezione
   if (b("#chiudiPrec")) { S.vistaPrec = null; return disegnaPrec(); }
   if (b("#precPrima") || b("#precDopo")) { const isp = S.isp.get(S.aperta), l = isp ? chiaviPrec(isp) : [], i = l.indexOf(S.vistaPrec) + (b("#precDopo") ? 1 : -1); if (i >= 0 && i < l.length) { S.vistaPrec = l[i]; disegnaPrec(); } return; }
-  if (b("#scattaPrec")) { S.sel = new Set([S.vistaPrec]); S.vistaPrec = null; disegnaPrec(); if (S.dettaglio) chiudiFoglio(); else disegna(); return $("#inCamera").click(); }
+  if (b("#scattaPrec")) { S.sostituisci = null; S.sel = new Set([S.vistaPrec]); S.vistaPrec = null; disegnaPrec(); if (S.dettaglio) chiudiFoglio(); else disegna(); return $("#inCamera").click(); }
   const pv = b("[data-prec]"); if (pv) { ev.preventDefault(); return apriPrec(pv.dataset.prec); }
 
   // foglio esporta / dettaglio
@@ -2280,14 +2383,22 @@ document.addEventListener("click", async (ev) => {
   if (b("#pulisci")) { S.esp.conferma = "elimina"; return disegnaEsporta(); }
   if (b("#pulisciNo")) { S.esp.conferma = null; return disegnaEsporta(); }
   if (b("#pulisciSi")) return pulisciEsportate();
-  if (b("#scattaQui")) { S.sel = new Set([S.dettaglio]); chiudiFoglio(); return $("#inCamera").click(); }
-  const mf = b("[data-foto]"); if (mf) return apriFoto(mf.dataset.foto);
+  if (b("#scattaQui")) { S.sostituisci = null; S.sel = new Set([S.dettaglio]); chiudiFoglio(); return $("#inCamera").click(); }
+  const mf = b("[data-foto]"); if (mf) return apriFoto(mf.dataset.foto, mf.dataset.chiave);
 
   // vista foto
   if (b("#chiudiVista")) { S.vista = null; disegnaFotoGrande(); if (S.dettaglio) disegnaDettaglio(); return; }
   if (b("#galleriaFoto")) { copiaInGalleria([S.vista.id]); return disegnaFotoGrande(); }
   if (b("#galleriaTutte")) { const isp = S.isp.get(S.aperta); if (isp) copiaInGalleria(fotoDi(isp.id).filter((f) => !f.galleria).sort((a, b) => String(a.scattata).localeCompare(String(b.scattata))).map((f) => f.id)); return disegnaEsporta(); }
   if (b("#eliminaFoto")) { S.vista.conferma = true; return disegnaFotoGrande(); }
+  if (b("#sostituisci")) {
+    const v = S.vista, f = v && S.foto.get(v.id);
+    if (!f || !v.chiave || !f.dest.includes(v.chiave)) return;
+    S.sostituisci = { vecchia: f.id, chiave: v.chiave }; S.sel = new Set([v.chiave]);
+    S.vista = null; disegnaFotoGrande();
+    if (S.dettaglio) chiudiFoglio(); else disegna();
+    return $("#inCamera").click();
+  }
   if (b("#eliminaNo")) { S.vista.conferma = false; return disegnaFotoGrande(); }
   if (b("#eliminaSi")) { await eliminaFoto(S.vista.id); S.vista = null; disegnaFotoGrande(); if (S.dettaglio) disegnaDettaglio(); return mostraToast("<b>Foto eliminata</b>"); }
   const tg = b("[data-togli]");
@@ -2296,7 +2407,13 @@ document.addEventListener("click", async (ev) => {
   // ispezione
   if (b("#btnEsporta")) return apriEsporta();
   if (b("#btnSenza")) { S.soloSenza = !S.soloSenza; b("#btnSenza").setAttribute("aria-pressed", S.soloSenza); return disegnaElenco(); }
-  const pt = b("[data-parte]"); if (pt) { const p = pt.dataset.parte; S.chiusi.has(p) ? S.chiusi.delete(p) : S.chiusi.add(p); return disegnaElenco(); }
+  const pt = b("[data-parte]"); if (pt) { const p = pt.dataset.parte; S.aperti.has(p) ? S.aperti.delete(p) : S.aperti.add(p); return disegnaElenco(); }
+  if (b("#btnTendine")) {
+    const isp = S.isp.get(S.aperta); if (!isp) return;
+    if (b("#btnTendine").dataset.tutte === "chiudi") S.aperti.clear();
+    else for (const d of destinazioni(isp)) S.aperti.add(d.parte);
+    return disegnaElenco();
+  }
   const cp = b("[data-comp]");
   if (cp) { const keys = cp.dataset.comp.split("\n"); const tutti = keys.every((k) => S.sel.has(k)); keys.forEach((k) => tutti ? S.sel.delete(k) : S.sel.add(k)); disegnaElenco(); return disegnaBarra(); }
   const det = b("[data-dettaglio]"); if (det && det.classList.contains("si")) { ev.preventDefault(); return apriDettaglio(det.dataset.dettaglio); }
@@ -2343,7 +2460,7 @@ document.addEventListener("submit", async (ev) => {
   $("#nuovoNome").value = ""; $("#nuovoNome").blur();
   isp.nuovi = [...new Set([...(isp.nuovi || []), nome])];
   isp.sync = "mod"; isp.aggiornata = new Date().toISOString();
-  S.sel = new Set([PREF_NUOVO + nome]);   // subito, prima di qualsiasi attesa: lo scatto successivo va qui
+  S.sostituisci = null; S.sel = new Set([PREF_NUOVO + nome]);   // subito, prima di qualsiasi attesa: lo scatto successivo va qui
   disegna();
   await lPut("ispezioni", isp);
   sincronizza();
